@@ -1,6 +1,3 @@
-# app.py
-# Simulación de Gasoducto Trans-Andino
-# Optimización de Procesos - Estudiante: [Tu nombre]
 
 import streamlit as st
 import numpy as np
@@ -19,7 +16,7 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# Estilo profesional (blanco, azul, gris)
+# Estilo profesional (blanco, azul, gris) + barra lateral derecha
 # --------------------------------------------------
 st.markdown("""
 <style>
@@ -41,9 +38,16 @@ st.markdown("""
         color: #1a3e50;
         font-weight: 500;
     }
-    /* Sidebar con fondo gris suave */
+    /* Sidebar con fondo gris suave y a la derecha */
     .css-1d391kg {
         background-color: #e9edf0;
+    }
+    /* Mover la barra lateral a la derecha */
+    .main > div {
+        flex-direction: row-reverse;
+    }
+    section[data-testid="stSidebar"] {
+        order: 2;
     }
     /* Texto en general */
     .stMarkdown, .stText, .stNumberInput, .stSelectbox {
@@ -146,7 +150,7 @@ def factor_recuperacion(tasa, n):
     return tasa * (1+tasa)**n / ((1+tasa)**n - 1)
 
 # --------------------------------------------------
-# 4. BARRA LATERAL (configuración)
+# 4. BARRA LATERAL (configuración) - ahora a la derecha
 # --------------------------------------------------
 with st.sidebar:
     st.markdown("## Configuración")
