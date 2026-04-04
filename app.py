@@ -1,4 +1,6 @@
- 
+# app.py
+# Simulación de Gasoducto Trans-Andino
+# Optimización de Procesos - Estudiante: [Tu nombre]
 
 import streamlit as st
 import numpy as np
@@ -11,37 +13,41 @@ import plotly.express as px
 # --------------------------------------------------
 st.set_page_config(
     page_title="Gasoducto Trans-Andino",
-    page_icon="⚙️",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # --------------------------------------------------
-# Estilo minimalista (solo bordes y espaciado)
+# Estilo profesional (blanco, azul, gris)
 # --------------------------------------------------
 st.markdown("""
 <style>
-    /* Fondo general claro */
+    /* Fondo general gris muy claro */
     .stApp {
-        background-color: #f8f9fa;
+        background-color: #f4f7f9;
     }
     /* Tarjeta para métricas */
     .metric-card {
-        background-color: white;
+        background-color: #ffffff;
         padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border-radius: 6px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         text-align: center;
-        border-top: 3px solid #2c6e9e;
+        border-top: 3px solid #1a5f8b;
     }
-    /* Títulos principales */
+    /* Títulos principales en azul oscuro */
     h1, h2, h3 {
-        color: #1f3a4b;
+        color: #1a3e50;
         font-weight: 500;
     }
-    /* Sidebar más elegante */
+    /* Sidebar con fondo gris suave */
     .css-1d391kg {
-        background-color: #eef2f5;
+        background-color: #e9edf0;
+    }
+    /* Texto en general */
+    .stMarkdown, .stText, .stNumberInput, .stSelectbox {
+        color: #2c3e50;
     }
     hr {
         margin: 0.5rem 0;
@@ -52,7 +58,7 @@ st.markdown("""
 # --------------------------------------------------
 # Título principal
 # --------------------------------------------------
-st.title("📐 Gasoducto Trans‑Andino")
+st.title("Gasoducto Trans-Andino")
 st.caption("Simulación hidráulica y económica | Optimización de Procesos")
 
 # --------------------------------------------------
@@ -143,22 +149,22 @@ def factor_recuperacion(tasa, n):
 # 4. BARRA LATERAL (configuración)
 # --------------------------------------------------
 with st.sidebar:
-    st.markdown("## ⚙️ Configuración")
+    st.markdown("## Configuración")
     st.markdown("---")
     
-    st.markdown("### 💰 Económicos")
+    st.markdown("### Económicos")
     costo_energia = st.number_input("Costo energía (USD/kWh)", value=0.05, step=0.01)
     factor_acero = st.number_input("Factor costo acero (x)", value=1.0, step=0.05)
     tasa_interes = st.number_input("Tasa interés (%)", value=8.0) / 100.0
     costo_comp_por_HP = st.number_input("Costo compresor (USD/HP)", value=1200, step=100)
     
-    st.markdown("### 🔩 Materiales")
+    st.markdown("### Materiales")
     dn_sel = st.selectbox("Diámetro nominal (pulg)", options=list(tuberias.keys()))
     grado_sel = st.selectbox("Grado del acero", options=list(aceros.keys()))
     
-    st.markdown("### 📈 Operación")
+    st.markdown("### Operación")
     Q = st.number_input("Flujo (MMscfd)", value=500, step=50)
-    N = st.slider("N° estaciones de compresión", 0, 6, 2, 1)
+    N = st.slider("Número de estaciones de compresión", 0, 6, 2, 1)
 
 # --------------------------------------------------
 # 5. CÁLCULOS DE MATERIALES Y GEOMETRÍA
@@ -194,11 +200,10 @@ for i in range(N + 1):
         presiones.append(P_fin_seg)
         
         if P_fin_seg < 1.0:
-            st.error(f"⚠️ Presión después del segmento {i+1} es demasiado baja ({P_fin_seg:.2f} psia). Diseño inviable. Aumente diámetro o reduzca flujo.")
+            st.error(f"Presión después del segmento {i+1} es demasiado baja ({P_fin_seg:.2f} psia). Diseño inviable. Aumente diámetro o reduzca flujo.")
             factible = False
             break
         
-        # Potencia del compresor (nueva fórmula)
         HP = potencia_compresor(Q, P_fin_seg, P_recepcion, T_succ_R, Z, k, MW_gas, eta_comp)
         HP_total += HP
         
@@ -230,48 +235,49 @@ TAC = CAPEX * CRF + OPEX
 # --------------------------------------------------
 # 8. MÉTRICAS PRINCIPALES (tarjetas)
 # --------------------------------------------------
-st.markdown("## 📊 Resultados clave")
+st.markdown("## Resultados clave")
 col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("💰 TAC (USD/año)", f"${TAC:,.0f}")
+    st.metric("TAC (USD/año)", f"${TAC:,.0f}")
     st.markdown('</div>', unsafe_allow_html=True)
 with col2:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("⚙️ Potencia total", f"{HP_total:,.0f} HP")
+    st.metric("Potencia total instalada", f"{HP_total:,.0f} HP")
     st.markdown('</div>', unsafe_allow_html=True)
 with col3:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("📉 Presión final", f"{presiones[-1]:.1f} psia")
+    st.metric("Presión final de entrega", f"{presiones[-1]:.1f} psia")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --------------------------------------------------
 # 9. GRÁFICO DE PERFIL HIDRÁULICO
 # --------------------------------------------------
-st.markdown("## 📈 Perfil de presión")
+st.markdown("## Perfil de presión")
 fig = go.Figure()
 fig.add_trace(go.Scatter(
     x=distancias_km, y=presiones,
     mode='lines+markers',
     name='Presión',
-    line=dict(color='#1f3a4b', width=2.5),
-    marker=dict(size=6, color='#2c6e9e')
+    line=dict(color='#1a5f8b', width=2.5),
+    marker=dict(size=6, color='#1a3e50')
 ))
-fig.add_hline(y=P_min_entrega, line_dash="dash", line_color="red", annotation_text="P mínima entrega (500 psia)")
-fig.add_hline(y=maop, line_dash="dash", line_color="orange", annotation_text=f"MAOP = {maop:.0f} psia")
+fig.add_hline(y=P_min_entrega, line_dash="dash", line_color="#c0392b", annotation_text="Presión mínima de entrega (500 psia)")
+fig.add_hline(y=maop, line_dash="dash", line_color="#e67e22", annotation_text=f"MAOP = {maop:.0f} psia")
 fig.update_layout(
     xaxis_title="Distancia (km)",
     yaxis_title="Presión (psia)",
     template="plotly_white",
     height=450,
-    margin=dict(l=0, r=0, t=30, b=0)
+    margin=dict(l=0, r=0, t=30, b=0),
+    font=dict(color="#2c3e50")
 )
 st.plotly_chart(fig, use_container_width=True)
 
 # --------------------------------------------------
 # 10. DESGLOSE DE COSTOS (gráfico de barras)
 # --------------------------------------------------
-st.markdown("## 💰 Desglose del costo anualizado")
+st.markdown("## Desglose del costo anualizado")
 costos_df = pd.DataFrame({
     "Concepto": ["CAPEX Tubería", "CAPEX Compresores", "OPEX Energía"],
     "Monto (USD/año)": [costo_ducto * CRF, costo_compresores * CRF, OPEX]
@@ -280,36 +286,36 @@ fig2 = px.bar(
     costos_df, x="Concepto", y="Monto (USD/año)",
     text="Monto (USD/año)",
     color="Concepto",
-    color_discrete_sequence=["#1f3a4b", "#2c6e9e", "#e67e22"],
+    color_discrete_sequence=["#1a3e50", "#1a5f8b", "#e67e22"],
     title="Costo Total Anualizado (TAC)"
 )
 fig2.update_traces(texttemplate='$%{text:,.0f}', textposition='outside')
-fig2.update_layout(showlegend=False, template="plotly_white", height=400)
+fig2.update_layout(showlegend=False, template="plotly_white", height=400, font=dict(color="#2c3e50"))
 st.plotly_chart(fig2, use_container_width=True)
 
 # --------------------------------------------------
 # 11. ALERTAS Y DETALLES TÉCNICOS
 # --------------------------------------------------
-st.markdown("## ⚠️ Validaciones")
+st.markdown("## Validaciones")
 col_al1, col_al2 = st.columns(2)
 with col_al1:
     if P_recepcion > maop:
-        st.error("❌ MAOP superado: presión de descarga excede el límite de Barlow.")
+        st.error("MAOP superado: la presión de descarga excede el límite de Barlow.")
     else:
-        st.success(f"✅ MAOP OK: {P_recepcion} psia ≤ {maop:.0f} psia")
+        st.success(f"MAOP OK: {P_recepcion} psia ≤ {maop:.0f} psia")
     
     if T_max_C > 65:
-        st.error(f"❌ Temperatura máxima de descarga: {T_max_C:.1f} °C > 65 °C")
+        st.error(f"Temperatura máxima de descarga: {T_max_C:.1f} °C > 65 °C")
     else:
-        st.success(f"✅ Temperatura OK: Máxima {T_max_C:.1f} °C ≤ 65 °C")
+        st.success(f"Temperatura OK: Máxima {T_max_C:.1f} °C ≤ 65 °C")
 
 with col_al2:
     if presiones[-1] < P_min_entrega:
-        st.error(f"❌ Presión final insuficiente: {presiones[-1]:.1f} psia < {P_min_entrega} psia")
+        st.error(f"Presión final insuficiente: {presiones[-1]:.1f} psia < {P_min_entrega} psia")
     else:
-        st.success(f"✅ Presión de entrega OK: {presiones[-1]:.1f} psia ≥ {P_min_entrega} psia")
+        st.success(f"Presión de entrega OK: {presiones[-1]:.1f} psia ≥ {P_min_entrega} psia")
 
-with st.expander("🔍 Detalles técnicos del diseño"):
+with st.expander("Detalles técnicos del diseño"):
     st.write(f"**Diámetro interno:** {d_int_in:.2f} in")
     st.write(f"**Espesor de pared:** {esp_in:.3f} in")
     st.write(f"**MAOP (Barlow):** {maop:.0f} psia")
@@ -319,4 +325,4 @@ with st.expander("🔍 Detalles técnicos del diseño"):
 
 # Pie de página
 st.markdown("---")
-st.markdown("🔧 **Proyecto Optimización de Procesos** | Simulación de Gasoducto Trans‑Andino")
+st.markdown("Proyecto Optimización de Procesos | Simulación de Gasoducto Trans-Andino")
