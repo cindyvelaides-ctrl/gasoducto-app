@@ -18,53 +18,86 @@ st.set_page_config(
 )
 
 # ------------------------------------------------------------
-# Estilo profesional (fondo claro, azul corporativo)
+# Estilo personalizado: fondo negro, letras blancas, título especial
 # ------------------------------------------------------------
 st.markdown("""
 <style>
+    /* Fondo general negro */
     .stApp {
-        background-color: #f5f7fa;
+        background-color: #0a0c10;
     }
-    .metric-card {
-        background-color: #ffffff;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        text-align: center;
-        border-top: 4px solid #1a5f8b;
-    }
-    h1, h2, h3 {
-        color: #1a3e50;
-        font-weight: 500;
-    }
-    .css-1d391kg {
-        background-color: #e9edf0;
-    }
-    /* Barra lateral a la derecha */
+    /* Sidebar a la derecha, fondo gris oscuro */
     .main > div {
         flex-direction: row-reverse;
     }
     section[data-testid="stSidebar"] {
         order: 2;
+        background-color: #14161c;
+        border-left: 1px solid #2c3e50;
+    }
+    /* Letras blancas en general */
+    .stMarkdown, .stText, .stNumberInput label, .stSelectbox label, .stSlider label,
+    .stMetric label, .stMetric value, .st-emotion-cache-1v0mbdj p {
+        color: #ffffff !important;
+    }
+    /* Título principal en mayúsculas, otra fuente, color azul eléctrico */
+    .main-title {
+        font-family: 'Arial Black', 'Impact', sans-serif;
+        font-size: 3rem;
+        text-align: center;
+        color: #00aaff;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 0rem;
+    }
+    /* Subtítulo */
+    .subtitle {
+        text-align: center;
+        color: #cccccc;
+        font-size: 1rem;
+        margin-top: 0rem;
+    }
+    /* Tarjetas de métricas */
+    .metric-card {
+        background-color: #1e1e2a;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        text-align: center;
+        border-top: 4px solid #00aaff;
+    }
+    .metric-card label, .metric-card div {
+        color: #ffffff !important;
+    }
+    h2, h3 {
+        color: #00aaff !important;
+        font-weight: 500;
     }
     hr {
-        margin: 0.5rem 0;
+        border-color: #2c3e50;
     }
-    .stMarkdown, .stText, .stNumberInput label, .stSelectbox label, .stSlider label {
-        color: #2c3e50;
+    /* Expander */
+    .streamlit-expanderHeader {
+        color: #00aaff !important;
+    }
+    /* Botones (si los hubiera) */
+    .stButton button {
+        background-color: #00aaff;
+        color: #0a0c10;
+        border-radius: 6px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------
-# Título y subtítulo
+# Título en mayúsculas con fuente especial
 # ------------------------------------------------------------
-st.title("Gasoducto Trans-Andino")
-st.caption("Simulación hidráulica y económica | Optimización de Procesos")
+st.markdown('<div class="main-title">Gasoducto Trans-Andino</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Simulación hidráulica y económica | Optimización de Procesos</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # ------------------------------------------------------------
-# 1. Base de datos técnica (Tablas del enunciado)
+# 1. Base de datos técnica
 # ------------------------------------------------------------
 TUBERIAS = {
     "12 pulgadas": {"D_ext_mm": 323.8, "t_mm": 10.31, "costo_base": 185},
@@ -79,47 +112,41 @@ ACEROS = {
 }
 
 # ------------------------------------------------------------
-# 2. Parámetros fijos del caso de estudio
+# 2. Parámetros fijos
 # ------------------------------------------------------------
-P_RECEPCION = 800.0          # psia
-P_MIN_ENTREGA = 500.0        # psia
-L_TOTAL_KM = 400.0           # km
-T_SUC_C = 20                 # Celsius
-T_SUC_K = 273.15 + T_SUC_C   # Kelvin
-T_SUC_R = T_SUC_K * 9/5      # Rankine
+P_RECEPCION = 800.0
+P_MIN_ENTREGA = 500.0
+L_TOTAL_KM = 400.0
+T_SUC_C = 20
+T_SUC_K = 273.15 + T_SUC_C
+T_SUC_R = T_SUC_K * 9/5
 GAMMA = 0.65
 Z = 0.90
-K = 1.30                     # Relación de calores específicos (gas natural)
-ETA_COMP = 0.85              # Eficiencia politrópica
-E_HID = 1.0                  # Eficiencia hidráulica (1.0 = tubería nueva)
+K = 1.30
+ETA_COMP = 0.85
+E_HID = 1.0
 HORAS_ANUALES = 8000
 VIDA_PROYECTO = 20
-R_UNIV = 1545.4              # ft·lbf/(lbmol·R)
-P_BASE = 14.7                # psia
-T_BASE_R = 520               # Rankine (60°F)
+R_UNIV = 1545.4
+P_BASE = 14.7
+T_BASE_R = 520
 MW_AIRE = 28.97
-MW_GAS = GAMMA * MW_AIRE     # lb/lbmol
+MW_GAS = GAMMA * MW_AIRE
 
 # ------------------------------------------------------------
 # 3. Funciones de cálculo
 # ------------------------------------------------------------
 def crf(tasa, n=VIDA_PROYECTO):
-    """Factor de recuperación de capital"""
     if tasa == 0:
         return 1.0 / n
     return tasa * (1 + tasa)**n / ((1 + tasa)**n - 1)
 
 def maop_barlow(SMYS_psi, t_mm, D_ext_mm, F):
-    """Presión máxima admisible (psia) - Barlow"""
     t_in = t_mm / 25.4
     D_in = D_ext_mm / 25.4
     return 2.0 * SMYS_psi * t_in * F / D_in
 
 def caida_presion_weymouth(P1, Q, L_mi, D_in):
-    """
-    Calcula P2 después de un segmento usando Weymouth.
-    P1, P2 en psia; Q en MMscfd; L_mi en millas; D_in en pulgadas.
-    """
     const = 433.5
     term = const * (Q / E_HID)**2 * (L_mi * GAMMA * T_SUC_R * Z) / (D_in**5.33)
     P2_cuad = P1**2 - term
@@ -128,44 +155,26 @@ def caida_presion_weymouth(P1, Q, L_mi, D_in):
     return np.sqrt(P2_cuad)
 
 def potencia_compresor(Q, P_suc, P_desc, T_suc_R, Z, k, MW, eta):
-    """
-    Potencia al freno (BHP) usando head politrópico.
-    Unidades: Q [MMscfd], presiones [psia], T_suc_R [Rankine], MW [lb/lbmol]
-    """
     r_p = P_desc / P_suc
     n = (k - 1) / k
-    # Head politrópico [ft·lbf/lbm]
     H_p = (Z * R_UNIV * T_suc_R / MW) * (1 / n) * (r_p**n - 1)
-    # Flujo másico [lb/s]
     Q_scf_s = Q * 1e6 / (24 * 3600)
-    rho_std = (P_BASE * 144 * MW) / (R_UNIV * T_BASE_R)   # lb/scf
+    rho_std = (P_BASE * 144 * MW) / (R_UNIV * T_BASE_R)
     m_dot = Q_scf_s * rho_std
-    # Potencia
     BHP = (m_dot * H_p) / (550 * eta)
     return BHP
 
 def temp_descarga(T_suc_R, P_suc, P_desc, k):
-    """Temperatura de descarga en Rankine"""
     return T_suc_R * (P_desc / P_suc)**((k-1)/k)
 
 def costo_tuberia(dn_key, factor_acero):
-    """Costo total del ducto en USD"""
     costo_m = TUBERIAS[dn_key]["costo_base"] * factor_acero
     return costo_m * (L_TOTAL_KM * 1000)
 
 # ------------------------------------------------------------
-# 4. Simulación del perfil de presión (bucle principal)
+# 4. Simulación del perfil
 # ------------------------------------------------------------
 def simular_perfil(Q, D_in, N_est):
-    """
-    Retorna:
-        distancias_km (list),
-        presiones_psia (list),
-        potencia_total_HP (float),
-        T_max_C (float),
-        presion_final_psia (float),
-        factible (bool)
-    """
     L_seg_mi = (L_TOTAL_KM * 0.621371) / (N_est + 1)
     distancias = [0.0]
     presiones = [P_RECEPCION]
@@ -176,7 +185,6 @@ def simular_perfil(Q, D_in, N_est):
 
     for i in range(N_est + 1):
         if i < N_est:
-            # Caída en el segmento
             P_fin_seg = caida_presion_weymouth(P_actual, Q, L_seg_mi, D_in)
             dist_km = (i + 1) * (L_TOTAL_KM / (N_est + 1))
             distancias.append(dist_km)
@@ -186,11 +194,9 @@ def simular_perfil(Q, D_in, N_est):
                 factible = False
                 break
 
-            # Potencia del compresor (eleva a P_RECEPCION)
             HP = potencia_compresor(Q, P_fin_seg, P_RECEPCION, T_SUC_R, Z, K, MW_GAS, ETA_COMP)
             HP_total += HP
 
-            # Temperatura de descarga
             T2_R = temp_descarga(T_SUC_R, P_fin_seg, P_RECEPCION, K)
             T2_C = (T2_R - 491.67) * 5/9
             if T2_C > T_max_C:
@@ -198,7 +204,6 @@ def simular_perfil(Q, D_in, N_est):
 
             P_actual = P_RECEPCION
         else:
-            # Último segmento (sin compresor)
             P_final = caida_presion_weymouth(P_actual, Q, L_seg_mi, D_in)
             dist_km = (i + 1) * (L_TOTAL_KM / (N_est + 1))
             distancias.append(dist_km)
@@ -234,19 +239,17 @@ dat_tubo = TUBERIAS[diametro_sel]
 dat_ac = ACEROS[acero_sel]
 D_ext_mm = dat_tubo["D_ext_mm"]
 t_mm = dat_tubo["t_mm"]
-D_in = (D_ext_mm - 2*t_mm) / 25.4   # pulgadas
+D_in = (D_ext_mm - 2*t_mm) / 25.4
 SMYS = dat_ac["SMYS_psi"]
 F = dat_ac["F"]
 MAOP = maop_barlow(SMYS, t_mm, D_ext_mm, F)
 
-# Simulación
 distancias, presiones, HP_total, T_max_C, P_final, factible = simular_perfil(Q_input, D_in, N_est)
 
 if not factible:
     st.error("Diseño inviable: la presión cae a valores extremadamente bajos. Aumente el diámetro o reduzca el flujo.")
     st.stop()
 
-# Costos
 costo_ducto = costo_tuberia(diametro_sel, factor_acero)
 costo_compresores = HP_total * costo_comp_por_HP
 CAPEX = costo_ducto + costo_compresores
@@ -273,7 +276,7 @@ with col3:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ------------------------------------------------------------
-# 8. Perfil hidráulico (gráfico)
+# 8. Perfil hidráulico (gráfico oscuro)
 # ------------------------------------------------------------
 st.markdown("## Perfil de presión")
 fig_pres = go.Figure()
@@ -281,23 +284,23 @@ fig_pres.add_trace(go.Scatter(
     x=distancias, y=presiones,
     mode='lines+markers',
     name='Presión',
-    line=dict(color='#1a5f8b', width=3),
-    marker=dict(size=6, color='#1a3e50')
+    line=dict(color='#00aaff', width=3),
+    marker=dict(size=6, color='#ffffff')
 ))
-fig_pres.add_hline(y=P_MIN_ENTREGA, line_dash="dash", line_color="#c0392b", annotation_text="Presión mínima de entrega (500 psia)")
-fig_pres.add_hline(y=MAOP, line_dash="dash", line_color="#e67e22", annotation_text=f"MAOP = {MAOP:.0f} psia")
+fig_pres.add_hline(y=P_MIN_ENTREGA, line_dash="dash", line_color="#ff5555", annotation_text="Presión mínima de entrega (500 psia)")
+fig_pres.add_hline(y=MAOP, line_dash="dash", line_color="#ffaa00", annotation_text=f"MAOP = {MAOP:.0f} psia")
 fig_pres.update_layout(
     xaxis_title="Distancia (km)",
     yaxis_title="Presión (psia)",
-    template="plotly_white",
+    template="plotly_dark",
     height=450,
     margin=dict(l=0, r=0, t=30, b=0),
-    font=dict(color="#2c3e50")
+    font=dict(color="#ffffff")
 )
 st.plotly_chart(fig_pres, use_container_width=True)
 
 # ------------------------------------------------------------
-# 9. Desglose de costos (gráfico de barras)
+# 9. Desglose de costos (gráfico oscuro)
 # ------------------------------------------------------------
 st.markdown("## Desglose del costo anualizado")
 costos_df = pd.DataFrame({
@@ -308,15 +311,21 @@ fig_cost = px.bar(
     costos_df, x="Concepto", y="Monto (USD/año)",
     text="Monto (USD/año)",
     color="Concepto",
-    color_discrete_sequence=["#1a3e50", "#1a5f8b", "#e67e22"],
+    color_discrete_sequence=["#00aaff", "#ffaa00", "#44cc44"],
     title="Costo Total Anualizado (TAC)"
 )
 fig_cost.update_traces(texttemplate='$%{text:,.0f}', textposition='outside')
-fig_cost.update_layout(showlegend=False, template="plotly_white", height=400, font=dict(color="#2c3e50"))
+fig_cost.update_layout(
+    template="plotly_dark",
+    height=400,
+    font=dict(color="#ffffff"),
+    paper_bgcolor="#0a0c10",
+    plot_bgcolor="#0a0c10"
+)
 st.plotly_chart(fig_cost, use_container_width=True)
 
 # ------------------------------------------------------------
-# 10. Validaciones (alertas profesionales)
+# 10. Validaciones
 # ------------------------------------------------------------
 st.markdown("## Validaciones de diseño")
 col_v1, col_v2 = st.columns(2)
@@ -347,4 +356,4 @@ with st.expander("Detalles técnicos del diseño"):
     st.write(f"**Peso molecular del gas:** {MW_GAS:.2f} lb/lbmol")
 
 st.markdown("---")
-st.markdown("Proyecto Optimización de Procesos | Simulación de Gasoducto Trans-Andino")
+st.markdown("<p style='text-align: center; color: #888;'>Proyecto Optimización de Procesos | Simulación de Gasoducto Trans-Andino</p>", unsafe_allow_html=True)
