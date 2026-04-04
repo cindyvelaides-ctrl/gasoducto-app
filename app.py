@@ -178,7 +178,7 @@ def simular_perfil_continuo(Q, D_in, N_est):
 # 5. BARRA LATERAL (Alineada 100% al PDF)
 # ------------------------------------------------------------
 with st.sidebar:
-    st.markdown("## ⚙️ Configuración")
+    st.markdown("## ⚙️ Parámetros de diseño")
     st.markdown("---")
 
     st.markdown("### 📊 Económicos")
