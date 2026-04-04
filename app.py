@@ -226,12 +226,3 @@ with col_v3:
         st.error(f"ALERTA: Presión de entrega ({P_entrega:.1f} psia) es inferior a {P_MIN_ENTREGA} psia. Incrementar N o diámetro.")
     else:
         st.success(f"VALIDO: Presión de entrega ({P_entrega:.1f} psia) cumple requisito mínimo.")
-
-# Opción de exportación para el reporte
-st.divider()
-st.download_button(
-    label="Descargar Resumen de Resultados en CSV",
-    data=f"Parametro,Valor\nFlujo (MMscfd),{Q}\nEstaciones,{N_est}\nDiametro,{diam_sel}\nAcero,{acero_sel}\nTAC (USD),{TAC:.2f}\nHP_Total,{HP_total:.2f}\nP_Entrega (psia),{P_entrega:.2f}\nT2_Descarga (C),{T2_C:.2f}\nMAOP (psia),{MAOP:.2f}",
-    file_name="resultados_gasoducto.csv",
-    mime="text/csv"
-)
