@@ -1,642 +1,390 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
-import math
+import plotly.graph_objects as go
+from math import sqrt, pow
 
-# ==========================================
-# 1. CONFIGURACIÓN DE LA PÁGINA Y DISEÑO (CSS)
-# ==========================================
-# Le decimos a Streamlit que use toda la pantalla
-st.set_page_config(page_title="Gemelo Digital - Transporte de Gas", layout="wide")
+# ------------------ CONFIGURACIÓN DE LA PÁGINA ------------------
+st.set_page_config(page_title="Gasoducto Trans-Andino", layout="wide")
 
-# Metemos código CSS para cambiar colores y letras como nos pediste
+# Estilos CSS personalizados para homogeneidad
 st.markdown("""
     <style>
-    /* Fondo negro para toda la página */
+    /* Fuente global profesional */
+    html, body, .stApp, .stMarkdown, .stText, .stNumberInput, .stSelectbox, .stSlider {
+        font-family: 'Poppins', 'Segoe UI', 'Roboto', sans-serif;
+    }
+    
+    /* Fondo negro */
     .stApp {
         background-color: #000000;
-        color: white;
+    }
+
+    /* Título principal: GRANDE, mismo color que las tarjetas */
+    .titulo-principal {
+        font-family: 'Arial Black', sans-serif;
+        font-size: 15vW;          /* Tamaño fijo enorme */
+        font-weight: 800;
+        color: #7FFFD4          /* Acuamarine */
+        text-align: center;
+        margin-bottom: 0.2rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     
-    /* Título principal en Arial, tamaño 20, color azul acuamarine */
-    h1 {
-        font-family: 'Arial', sans-serif !important;
-        font-size: 20px !important;
-        color: #7FFFD4 !important; /* Aquamarine */
-        font-weight: bold;
+    /* Subtítulo: más pequeño, blanco, elegante */
+    .subtitulo-principal {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 22px;
+        font-weight: 300;
+        color: #FFFFFF;
+        text-align: center;
+        margin-top: -10px;
+        margin-bottom: 40px;
+        letter-spacing: 1px;
     }
     
-    /* Subtítulos bon24\"": {"D_ext_mm": 609.6, "espesor_mm": 17.48, "costo_m": 440}
-}
-
-grados_acero = {
-    "X52": {"SMYS": 52000, "F": 0.72},
-    "X60": {"SMYS": 60000, "F": 0.72}
-}
-
-# Constantes dadas por el profe y conversiones necesarias
-L_km = 400
-L_millas = L_km / 1.60934 # Weymouth usa millas
-T_succion_C = 20
-T_Rankine = (T_succion_C * 1.8) + 32 + 460.67 # Weymouth usa Rankine
-gravedad_esp = 0.65
-Z = 0.90
-Pin_psia = 800
-Pout_min_psia = 500
-
-# Parámetros asumidos para el compresor porque no estaban todos en el PDF
-eficiencia_compresor = 0.75 
-k_gas = 1.3
-R_gas = 53.28 # Constante de gas típica
-
-# --- MA# 2. BASE DE DATOS TÉCNICA (Como en el PDF)
-# ==========================================
-# Diccionario con los datos de las tuberías
-tuberias = {
-    "12": {"d_ext_mm": 323.8, "esp_mm": 10.31, "costo_m": 185},
-    "16": {"d_ext_mm": 406.4, "esp_mm": 12.70, "costo_m": 260},
-    "20": {"d_ext_mm": 508.0, "esp_mm": 15.09, "costo_m": 350},
-    "24": {"d_ext_mm": 609.6, "esp_mm": 17.48, "costo_m": 440}
-}
-
-# Diccionario con los grados de acero
-grados_acero = {
-    "X52": {"smys": 52000, "factor_F": 0.72},
-    "X60": {"smys": 60000, "factor_F": 0.72}
-}
-
-# Constantes del problema
-L_total = 400 # km
-P_recepcion = 800 # psia
-P_min_entrega = 500 # psia
-T_succion_K = 293itos y legibles en blanco */
-    h2, h3, h4 {
-        font-family: 'Trebuchet MS', Helvetica, sans-serif !important;
-        color: #FFFFFF !important;
+    /* Encabezados de sección (RESULTADOS, Perfil Hidráulico, etc.) */
+    .seccion-titulo {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 28px;
+        font-weight: 600;
+        color: #FFFFFF;
+        margin-top: 30px;
+        margin-bottom: 20px;
+        border-left: 5px solid #7FFFD4;
+        padding-left: 15px;
     }
     
-    /* Texto normal en blanco para que se lea en el fondo negro */
-    p, span, label, div {
-        color: #F0F0F0 !important;
+    /* Tarjetas de métricas (mismo color que el título) */
+    .metric-card {
+        background-color: #ccccc;   /* Azul os */
+        border-radius: 20px;
+        padding: 25px 15px;
+        text-align: center;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        border: 1px solid #2c5a9e;
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    .metric-label {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        color: #DDDDDD;
+        margin-bottom: 12px;
+    }
+    .metric-value {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: #7FFFD4;   /* Aguamarina */
+        margin: 0;
+    }
+    .metric-unit {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 18px;
+        font-weight: 400;
+        color: #FFFFFF;
+    }
+    
+    /* Descripciones en sidebar (amarillo suave) */
+    .descripcion {
+        font-size: 13px;
+        color: #FFFACD;
+        margin-bottom: 8px;
+        font-style: italic;
+        background-color: #2E2E2E;
+        padding: 5px 8px;
+        border-radius: 8px;
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+    }
+    
+    /* Ajustes para los expanders de la sidebar */
+    .streamlit-expanderHeader {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-weight: 600;
+        font-size: 18px;
+        color: #7FFFD4;
     }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# Título de la app
-st.title("Proyecto: Optimización y Simulación Digital de Sistemas de Transporte de Gas")
+# Títulos
+st.markdown('<p class="titulo-principal">🔥 GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitulo-principal">Gemelo digital | Simulación hidráulica & económica</p>', unsafe_allow_html=True)
 
-# ==========================================
-# 2. BASE DE DATOS TÉCNICA (Tablas del PDF)
-# ==========================================
-# Usamos diccionarios simples porque es más fácil que usar Pandas avanzado
-datos_tuberia = {
-    "12 pulg": {"D_ext_mm": 323.8, "espesor_mm": 10.31, "costo_m": 185},
-    "16 pulg": {"D_ext_mm": 406.4, "espesor_mm": 12.70, "costo_m": 260},
-    "20 pulg": {"D_ext_mm": 508.0, "espesorQUETACIÓN DE LA PÁGINA ---
-# Dividimos la pantalla en 2: la parte principal (col_main) y la barra derecha (col_right)
-col_main, col_right = st.columns([3, 1])
-
-# ==========================================
-# PARTE DERECHA: PANEL DE CONFIGURACIÓN
-# ==========================================
-with col_right:
-    st.markdown("### ⚙️ Panel de Configuración")
-    
-    st.markdown("**1. Parámetros Económicos**")
-    costo_energia = st.number_input("Costo de energía (USD/kWh)", value=0.10, step=0.01)
-    tasa_interes = st.number_input("Tasa de interés (%)", value=10.0, step=0.5) / 100
-    anos_vida = st.number_input("Años de vida del proyecto", value=20)
-    
-    st.markdown("**2. Selección de Material**")
-    diametro_seleccionado = st.selectbox("Diámetro Nominal (pulg)", list(tuberias.keys()), index=2) # Por defecto 20"
-    grado_seleccionado = st.selectbox("Grado del Acero", list(grados_acero.keys()))
-    
-    .15 # Kelvin (20°C)
-gravedad_esp = 0.65
+# ------------------ FUNCIONES DE CÁLCULO ------------------
+L_km = 400.0
+L_miles = L_km * 0.621371
+T1_K = 293.15
+T1_R = T1_K * 9/5
+gamma = 0.65
 Z = 0.90
-E_weymouth = 1.0 # Eficiencia asumida
-k_gas = 1.3 # Exponente adiabático típico para gas natural
-eficiencia_comp = 0.75 # Eficiencia del compresor típica
+k = 1.28
+eta = 0.85
+horas_anio = 8760
 
-# ==========================================
-# 3. INTERFAZ: DIVISIÓN DE PANTALLA (CONTROLES A LA DERECHA)
-# ==========================================
-# Creamos dos columnas: una que ocupa el 75% (izquierda) y otra el 25% (derecha)
-col_principal, col_derecha = st.columns([3, 1])
-
-# --- PANEL DE CONFIGURACIÓN (DERECHA) ---
-with col_derecha:
-    st.markdown("### ⚙️ Panel de Configuración")
-    
-    st.markdown("#### 1. Parámetros Económicos")
-    costo_energia = st.number_input("Costo de Energía (USD/kWh)", value=0.08, step=0.01)
-    tasa_interes = st.number_input("Tasa de Interés (%)", value=10.0, step=1.0) / _mm": 15.09, "costo_m": 350},
-    "24 pulg": {"D_ext_mm": 609.6, "espesor_mm": 17.48, "costo_m": 440}
+pipe_data_base = {
+    "12\"": {"D_ext_mm": 323.8, "t_mm": 10.31, "costo_m": 185},
+    "16\"": {"D_ext_mm": 406.4, "t_mm": 12.70, "costo_m": 260},
+    "20\"": {"D_ext_mm": 508.0, "t_mm": 15.09, "costo_m": 350},
+    "24\"": {"D_ext_mm": 609.6, "t_mm": 17.48, "costo_m": 440},
 }
 
-datos_acero = {
-    "X52": {"SMYS": 52000, "F": 0.72},
-    "X60": {"SMYS": 60000, "F": 0.72}
+steel_data = {
+    "X52": {"SMYS_psi": 52000, "F": 0.72},
+    "X60": {"SMYS_psi": 60000, "F": 0.72},
 }
 
-# ==========================================
-# 3. ESTRUCTURA DE LA INTERFAZ (Columnas)
-# ==========================================
-# Creamos dos columnas.st.markdown("**3. Variables Operativas**")
-    Q_flujo = st.number_input("Flujo de gas (MMscfd)", value=500.0, step=10.0)
-    num_estaciones = st.number_input("Número de estaciones de compresión", min_value=0, max_value=10, value=2, step=1)
+def calcular_MAOP(D_ext_in, t_in, SMYS_psi, F):
+    return 2 * SMYS_psi * F * t_in / D_ext_in
 
-# ==========================================
-# CÁLCULOS MATEMÁTICOS (El "Gemelo Digital")
-# ==========================================
+def weymouth_k_loss(Q_MMscfd, L_seg_millas, D_in_pulg, gamma, T_R, Z):
+    return 433.5 * (Q_MMscfd**2) * L_seg_millas * gamma * T_R * Z / (D_in_pulg**5.33)
 
-# 1. Propiedades de la tubería elegida
-tubo = tuberias[diametro_seleccionado]
-D_ext_pulgadas = tubo["D_ext100
-    vida_util = 20 # Años típicos de proyecto
+def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_actual):
+    diam_nom = diametro
+    D_ext_mm = pipe_data_actual[diam_nom]["D_ext_mm"]
+    t_mm = pipe_data_actual[diam_nom]["t_mm"]
+    D_int_mm = D_ext_mm - 2*t_mm
+    D_int_pulg = D_int_mm / 25.4
+    costo_pipe_m = pipe_data_actual[diam_nom]["costo_m"]
     
-    st.markdown("#### 2. Selección de Material")
-    diametro_seleccionado = st.selectbox("Diámetro Nominal (pulg)", options=list(tuberias.keys()), index=2)
-    grado_seleccionado = st.selectbox("Grado de Acero", options=list(grados_acero.keys()))
+    SMYS_psi = steel_data[grado_acero]["SMYS_psi"]
+    F = steel_data[grado_acero]["F"]
     
-    st.markdown("#### 3. Variables Operativas")
-    flujo_Q = st.number_input("Flujo de Gas (MMscfd)", value=500.0, step=10.0)
-    num_estaciones = st.number_input("Número de Estaciones de Compresión", min_value=0, La izquierda (grande) para gráficos, la derecha (pequeña) para controles
-col_principal, col_derecha = st.columns([3, 1])
-
-# --- BARRA DESPLEGABLE LADO DERECHO ---
-with col_derecha:
-    st.markdown("### ⚙️ Panel de Configuración")
-    _mm"] / 25.4 # Convertimos mm a pulgadas
-espesor_pulgadas = tubo["espesor_mm"] / 25.4 # Convertimos mm a pulgadas
-D_int_pulgadas = D_ext_pulgadas - (2 * espesor_pulgadas) # Diámetro interno real
-
-# 2. Verificación MAOP (Barlow)
-SMYS = grados_acero[ max_value=10, value=1, step=1)
-
-# ==========================================
-# 4. CÁLCULOS MATEMÁTICOS (El "Cerebro")
-# ==========================================
-# Obtenemos los valores elegidos por el usuario
-tubo_actual = tuberias[diametro_seleccionado]
-# Expander es la barrita desplegable que pediste
-    with st.expander("Modificar Parámetros Aquí", expanded=True):
-        
-        st.markdown("**1. Parámetros Económicos**")
-        costo_energia = st.number_input("Costo Energía (USD/kWh)", value=0.08, step=0.01)
-        tasa_interes = st.slider("Tasa de interésgrado_seleccionado]["SMYS"]
-F_diseno = grados_acero[grado_seleccionado]["F"]
-# Formula de Barlow: P = (2 * SMYS * espesor) / D_ext * F
-MAOP = (2 * SMYS * espesor_pulgadas / D_ext_pulgadas) * F_diseno
-
-# 3. Hidráulica: División del gasoducto en tramos
-# Si hay N estaciones, hay N+1 tramos de tubería
-num_tramos = num_estaciones + 1
-L_tramo_millas = L_millas / num_tramos
-L_tramo_km = L_km / num_tramos
-
-# Factor de Weymouth (E asumimos 1 por simplicidad)
-E = 1.0
-# Constante de la parte derecha de la ecuacion de Weymouth
-termino_weymouth = 433.5 * ((Q_flujo/E)**2) * ((L_tramo_millas * gravedad_esp * T_Rankine * Z) / (D_int_pulgadas**5.33))
-
-# Vectores para graficar
-distancias_grafico = [0]
-presiones_grafico = [Pin_psia]
-hp_total = 0
-temperatura_salida = T_succionacero_actual = grados_acero[grado_seleccionado]
-
-# Conversiones importantes a pulgadas para las fórmulas gringas (Weymouth y Barlow)
-d_ext_pulgadas = tubo_actual["d_ext_mm"] / 25.4
-esp_pulgadas = tubo_actual["esp_mm"] / 25.4
-# Diámetro interno en pulgadas
-d_int_pulgadas = d_ext_pulgadas - (2 * esp_pulgadas)
-
-# Dividimos la distancia según las estaciones
-segmentos = num_estaciones + 1
-longitud_segmento_km = L_total / segmentos
-
-# Listas para guardar los datos de las gráficas
-distancias_plot = [0]
-presiones_plot = [P_recepcion]
-
-P_actual = P_recepcion
-HP_total = 0
-alerta_temperatura = False
-temperatura_max = 20.0
-
-# Bucle para simular cómo cae la presión por cada tramo del tubo
-for i in range(segmentos):
-    # Ecuación de Weymouth (Despejando P2)
-    # P1^2 - P2^2 = 433.5 * (Q/E)^2 * (L*g*T*Z) / D^5.33
-    parte_derecha = 433 (%)", min_value=1, max_value=20, value=10)
-        
-        st.markdown("**2. Selección de Material**")
-        diametro_sel = st.selectbox("Diámetro de Tubería", list(datos_tuberia.keys()))
-        acero_sel = st.selectbox("Grado de_C
-falla_presion = False
-
-presion_actual = Pin_psia
-
-for i in range(num_tramos):
-    # Calculamos la presion al final del tramo usando Weymouth: P2 = sqrt(P1^2 - termino)
-    P2_cuadrado = (presion_actual**2) - termino_weymouth
+    D_ext_pulg = D_ext_mm / 25.4
+    t_pulg = t_mm / 25.4
+    MAOP_psi = calcular_MAOP(D_ext_pulg, t_pulg, SMYS_psi, F)
     
-    if P2_cuadrado <= 0:
-        falla_presion =.5 * ((flujo_Q/E_weymouth)**2) * ((longitud_segmento_km * gravedad_esp * T_succion_K * Z) / (d_int_pulgadas**5.33))
+    L_seg_millas = L_miles / N
+    K_seg = weymouth_k_loss(Q, L_seg_millas, D_int_pulg, gamma, T1_R, Z)
     
-    P_final_cuadrado = (P_actual**2) - parte_derecha
+    if K_seg < 0:
+        return None
+    P_desc_psi = sqrt(500**2 + K_seg)
+    supera_maop = P_desc_psi > MAOP_psi
     
-    if P_final_cuadrado > 0:
-        P_final_segmento = math.sqrt(P_final_cuadrado)
+    distancias_km = []
+    presiones_psi = []
+    dist_actual = 0.0
+    for i in range(N):
+        distancias_km.append(dist_actual)
+        presiones_psi.append(P_desc_psi)
+        dist_seg_km = L_km / N
+        distancias_km.append(dist_actual + dist_seg_km)
+        presiones_psi.append(500.0)
+        dist_actual += dist_seg_km
+    
+    HP_total = 0.0
+    T2_max_C = 0.0
+    factor = 0.0857
+    P_suc = 800.0
+    r = P_desc_psi / P_suc
+    HP_est = factor * Q * P_suc * (pow(r, (k-1)/k) - 1) / eta
+    HP_total += HP_est
+    T2_K = T1_K * pow(r, (k-1)/k)
+    T2_C = T2_K - 273.15
+    T2_max_C = T2_C
+    
+    for _ in range(1, N):
+        P_suc = 500.0
+        r = P_desc_psi / P_suc
+        HP_est = factor * Q * P_suc * (pow(r, (k-1)/k) - 1) / eta
+        HP_total += HP_est
+        T2_K = T1_K * pow(r, (k-1)/k)
+        T2_C = T2_K - 273.15
+        if T2_C > T2_max_C:
+            T2_max_C = T2_C
+    
+    alerta_termica = T2_max_C > 65.0
+    presion_final_psi = presiones_psi[-1]
+    alerta_entrega = presion_final_psi < 500.0
+    
+    longitud_m = L_km * 1000
+    capex_pipe = longitud_m * costo_pipe_m
+    capex_comp = HP_total * 1500.0
+    
+    i = params_economicos["tasa_interes"] / 100.0
+    n = 20
+    if i > 0:
+        CRF = i * (1+i)**n / ((1+i)**n - 1)
     else:
-        P Acero", list(datos_acero.keys()))
-        
-        st.markdown("**3. Variables Operativas**")
-        flujo_gas = st.slider("Flujo de gas Q (MMscfd)", 100, 1000, 500)
-        num_estaciones = st.number_input("Número de estaciones de compresión (N)", min_value=0, max_value=10, value=2)
+        CRF = 1/n
+    
+    energia_anual_kWh = HP_total * 0.7457 * horas_anio
+    opex_energia = energia_anual_kWh * params_economicos["costo_energia"]
+    opex_mant = 0.05 * capex_comp
+    OPEX_total = opex_energia + opex_mant
+    CAPEX_total = capex_pipe + capex_comp
+    TAC = CAPEX_total * CRF + OPEX_total
+    
+    cost_breakdown = {
+        "CAPEX Ducto": capex_pipe,
+        "CAPEX Compresores": capex_comp,
+        "OPEX Energía": opex_energia,
+        "OPEX Mantenimiento": opex_mant,
+    }
+    
+    return {
+        "TAC": TAC,
+        "HP_total": HP_total,
+        "presion_final": presion_final_psi,
+        "P_descarga": P_desc_psi,
+        "MAOP": MAOP_psi,
+        "supera_MAOP": supera_maop,
+        "alerta_termica": alerta_termica,
+        "alerta_entrega": alerta_entrega,
+        "T2_max_C": T2_max_C,
+        "distancias_km": distancias_km,
+        "presiones_psi": presiones_psi,
+        "cost_breakdown": cost_breakdown,
+        "capex_total": CAPEX_total,
+        "opex_total": OPEX_total,
+    }
 
-# ==========================================
-# 4. CÁLCULOS MATEMÁTICOS (El "Gemelo Digital")
-# ==========================================
-# Constantes del problema
-L_total_km = 400.0
-P_in = 800.0 # psia
-T_in_K = 293.15 # 20°C
-gravedad_esp = 0.65
-Z = 0.90
-E = 1.0 # Eficiencia asumida
+# ------------------ BARRA LATERAL ------------------
+st.sidebar.markdown('<p style="font-size:24px; font-weight:700; color:#7FFFD4; margin-bottom:15px;">⚙️ CONFIGURACIÓN</p>', unsafe_allow_html=True)
 
-# Extrayendo datos seleccionados por el usuario
-D_ext_mm = datos_tuberia[diametro_sel]["D_ext_mm"]
-espesor_mm = datos_tuberia[diametro_sel]["espesor_mm"]
-costo_tubo_m = datos_tuberia[diametro_sel]["costo_m"]
-smys = datos_acero[acero_sel]["SMYS"]
-factor_f = datos_acero[acero_sel]["F"]
+pipe_data = pipe_data_base.copy()
 
-# CONVERSIONES DE UNIDADES (Súper importante para que la fórmula no explote)
-D_ext True
-        presion_final_tramo = 0
+with st.sidebar.expander("💰 PARÁMETROS ECONÓMICOS", expanded=True):
+    st.markdown('<div class="descripcion">💡 Mayor costo energía → mayor OPEX (gasto anual).</div>', unsafe_allow_html=True)
+    costo_energia = st.number_input("USD/kWh", min_value=0.01, max_value=1.0, value=0.05, step=0.01, format="%.3f", key="energia")
+    
+    st.markdown('<div class="descripcion">💡 Tasa interés alta → encarece el costo anual del capital (CRF).</div>', unsafe_allow_html=True)
+    tasa_interes = st.number_input("% anual", min_value=0.0, max_value=30.0, value=8.0, step=0.5, key="interes")
+    
+    st.markdown('<div class="descripcion">💡 Multiplica costo del acero (simula variaciones de mercado).</div>', unsafe_allow_html=True)
+    factor_steel = st.number_input("Factor acero", min_value=0.5, max_value=2.0, value=1.0, step=0.05, key="acero")
+
+with st.sidebar.expander("📏 TUBERÍA Y MATERIAL", expanded=True):
+    st.markdown('<div class="descripcion">💡 Mayor diámetro → menor caída presión, pero más CAPEX.</div>', unsafe_allow_html=True)
+    diametro = st.selectbox("Diámetro nominal", list(pipe_data.keys()), key="diam")
+    
+    st.markdown('<div class="descripcion">💡 Mayor grado (X60) soporta más presión (MAOP más alto).</div>', unsafe_allow_html=True)
+    grado_acero = st.selectbox("Grado del acero", list(steel_data.keys()), key="grado")
+
+with st.sidebar.expander("🔧 OPERACIÓN", expanded=True):
+    st.markdown('<div class="descripcion">💡 Más flujo → más pérdida de presión y más potencia requerida.</div>', unsafe_allow_html=True)
+    Q_diseno = st.number_input("Flujo (MMscfd)", min_value=100, max_value=1500, value=500, step=10, key="flujo")
+    
+    st.markdown('<div class="descripcion">💡 Más estaciones → reduce presión por etapa, pero sube CAPEX compresores.</div>', unsafe_allow_html=True)
+    N_estaciones = st.slider("N° estaciones", min_value=1, max_value=10, value=2, step=1, key="estaciones")
+
+# Aplicar factor de acero
+for diam in pipe_data:
+    pipe_data[diam]["costo_m"] = pipe_data_base[diam]["costo_m"] * factor_steel
+
+params_economicos = {
+    "costo_energia": costo_energia,
+    "tasa_interes": tasa_interes,
+}
+
+# ------------------ PANEL PRINCIPAL ------------------
+st.markdown('<div class="seccion-titulo">📊 RESULTADOS</div>', unsafe_allow_html=True)
+
+resultados = calcular_perfil(N_estaciones, Q_diseno, diametro, grado_acero, params_economicos, pipe_data)
+
+if resultados:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">💰 TAC (USD/año)</div>
+                <div class="metric-value">${resultados['TAC']:,.0f}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">⚙️ Potencia total</div>
+                <div class="metric-value">{resultados['HP_total']:,.0f} <span class="metric-unit">HP</span></div>
+            </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">📉 Presión final</div>
+                <div class="metric-value">{resultados['presion_final']:.1f} <span class="metric-unit">psia</span></div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    # Perfil hidráulico
+    st.markdown('<div class="seccion-titulo">📈 PERFIL HIDRÁULICO</div>', unsafe_allow_html=True)
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(x=resultados['distancias_km'], y=resultados['presiones_psi'],
+                             mode='lines+markers', name='Presión del gas',
+                             line=dict(color='#7FFFD4', width=4),
+                             marker=dict(size=8, color='#FFD700')))
+    fig1.update_layout(
+        title="Presión vs Distancia a lo largo del gasoducto",
+        xaxis_title="Distancia (km)",
+        yaxis_title="Presión (psia)",
+        plot_bgcolor='#1E1E1E',
+        paper_bgcolor='#000000',
+        font=dict(family="Poppins, Segoe UI, Roboto, sans-serif", color='white', size=12),
+        hovermode='x',
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    st.plotly_chart(fig1, use_container_width=True)
+    
+    # Desglose de costos
+    st.markdown('<div class="seccion-titulo">💰 DESGLOSE DE COSTOS ANUALIZADOS</div>', unsafe_allow_html=True)
+    costs = resultados['cost_breakdown']
+    conceptos = list(costs.keys())
+    montos = list(costs.values())
+    colores = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728']
+    fig2 = go.Figure(go.Bar(
+        x=conceptos,
+        y=montos,
+        marker_color=colores,
+        text=[f"${m:,.0f}" for m in montos],
+        textposition='outside',
+        name='Monto USD'
+    ))
+    fig2.update_layout(
+        title="Distribución de CAPEX y OPEX",
+        yaxis_title="USD",
+        plot_bgcolor='#1E1E1E',
+        paper_bgcolor='#000000',
+        font=dict(family="Poppins, Segoe UI, Roboto, sans-serif", color='white'),
+        showlegend=False
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # Validación de seguridad
+    st.markdown('<div class="seccion-titulo">⚠️ VALIDACIÓN DE SEGURIDAD</div>', unsafe_allow_html=True)
+    if resultados['supera_MAOP']:
+        st.error(f"🚨 ALERTA: Presión de descarga ({resultados['P_descarga']:.1f} psia) > MAOP ({resultados['MAOP']:.1f} psia)")
     else:
-        presion_final_tramo = np.sqrt(P2_cuadrado)
+        st.success(f"✅ MAOP verificado: {resultados['P_descarga']:.1f} ≤ {resultados['MAOP']:.1f} psia")
     
-    # Agregamos al gráfico (caída de presión en el tubo)
-    distancia_actual = (i+1) * L_tramo_km
-    distancias_grafico.append(distancia_actual)
-    presiones_grafico.append(presion_final_tramo)
-    
-    # Si no es el último tramo, pasamos por una estación compresora_final_segmento = 0 # Significa que la presión cayó a cero (no llega el gas)
-
-    distancias_plot.append(longitud_segmento_km * (i + 1))
-    presiones_plot.append(P_final_segmento)
-    
-    # Si no es el último tramo, hay una estación que sube la presión de vuelta a 800
-    if i < num_estaciones:
-        if que vuelve a subir a 800 psia
-    if i < num_tramos - 1 and not falla_presion:
-        P_in_compresor = presion_final_tramo
-        P_out_compresor = Pin_psia # Asumimos que comprime de nuevo hasta los 800
-        
-        # Fórmula de Potencia (simplificada en unidades compatibles)
-        # HP = Q * 10^6 / (24*3600*eta) * (Z*R*T1 / (k-1)) * ((Pout/Pin)^((k-1)/k) - 1)
-        relacion_compresion = P_out_compresor / P_in_compresor
-        potencia_factor = (relacion_compresion**((k_gas-1)/k_gas)) - 1
-        hp_tramo = (Q_flujo * 1e6 / (24 * 3600 * eficiencia_compresor)) * ((Z * R_gas * T_Rankine) / (k_gas - 1)) * potencia_factor
-        hp_total += hp_tramo
-        
-        # Cálculo de Temperatura de descarga del compresor
-        T2_Rankine = T_Rankine * (relacion_compresion**((k_gas-1)/k_gas))
-        T2_C = (T2_Rankine - 460.67 - 32) / 1.8
-        if T2_C > temperatura_salida:
-            temperatura_salida = T2_C
-        
-        # Agregamos el subidón de presión en la misma distancia (para el gráfico)
-        distancias_grafico. P_final_segmento > 0:
-            # Fórmula de Potencia (HP)
-            ratio_compresion = P_recepcion / P_final_segmento
-            # Constante R para el aire/gas modificado, usamos un aproximado estándar
-            R_gas = 51.5 
-            
-            # HP fórmula del PDF adaptada
-            hp_tramo = ((flujo_Q * 1e6) / (24 * 3600 * eficiencia_comp)) * ((Z * R_gas * T_succion_K) / (k_gas - 1)) * ((ratio_compresion**((k_gas-1)/k_gas)) - 1)
-            HP_total += hp_tramo
-            
-            # Fórmula de Temperatura
-            T2_K = T_succion_K * (ratio_compresion**((k_gas-1)/k_gas))
-            T2_C = T2_K - 273.15
-            if T2_C > temperatura_max:
-                temperatura_max = T2_C
-            if T2_C > 65:
-                alerta_temperatura = True
-                
-        # Subimos la presión en la gráfica por la estación
-        distancias_plot.append(longitud_segmento_km * (i + 1))
-        presiones_plot.append(P_recepcion)
-        P_actual = P_recepcion # Reiniciamos la presión para el siguiente tramo
-
-presion_llegada = presiones_plot[-1]
-
-# Validaciones de Seguridad
-# Fórmula de Barlow: P_max = (2 * SMYS * espesor) / D_ext_pulg = D_ext_mm / 25.4
-espesor_pulg = espesor_mm / 25.4
-D_interno_pulg = D_ext_pulg - (2 * espesor_pulg)
-L_total_millas = L_total_km * 0.621371
-T_in_R = T_in_K * 1.8 # De Kelvin a Rankine para Weymouth
-
-# Dividimos el tubo en segmentos dependiendo de cuántas estaciones haya
-segmentos = num_estaciones + 1
-L_segmento_millas = L_total_millas / segmentos
-L_segmento_km = L_total_km / segmentos
-
-# Variables para guardar resultados
-presiones_distancia = [0.0]
-presiones_valores = [P_in]
-potencia_total_hp = 0
-max_temp_out = T_in_K # Empezamos con la temp de entrada
-
-# Calculo de Presión Máxima de Operación (Barlow)
-MAOP = (2 * smys * espesor_pulg / D_ext_pulg) * factor_f
-
-# Lógica del flujo por los segmentos
-p_actual = P_in
-alerta_falla_flujo = False
-
-for i in range(segmentos):
-    # Ecuación de Weymouth despejando P2
-    # P1^2 - P2^2 = 433.5 * (Q/E)^2 * (L * gamma * T * Z) / D^5.33
-    parte_dere * F
-MAOP = (2 * acero_actual["smys"] * esp_pulgadas) / d_ext_pulgadas * acero_actual["factor_F"]
-alerta_maop = P_recepcion > MAOP
-alerta_entrega = presion_llegada < P_min_entrega
-
-# Cálculos Económicos
-# CAPEX: Tubería (costo por metro * 400,000 metros) + Compresores (Aprox $1500 por HP)
-capex_tuberia = tubo_actual["costo_m"] * (L_total * 1000)
-capex_compresores = HP_total * 1500 
-CAPEX_total = capex_tuberia + capex_compresores
-
-# Factor de Recuperación de Capital (CRF)
-CRF = (tasa_interes * ((1 + tasa_interes)**vida_util)) / (((1 + tasa_interes)**vida_util) - 1)
-
-# OPEX: Energía de los compresores (HP a kW = 0.746) * 24 horas * 365 días * costo energía
-OPEX_anual = (HP_total * 0.746) * 24 * 365 * costo_energia
-
-# TAC
-TAC = (CAPEX_total * CRF) + OPEX_anual
-
-# ==========================================
-# 5. VISUALIZACIÓN PRINCIPAL (IZQUIERDA)
-# ==========================================
-with col_principalappend(distancia_actual)
-        presiones_grafico.append(P_out_compresor)
-        presion_actual = P_out_compresor
+    if resultados['alerta_termica']:
+        st.error(f"🔥 ALERTA TÉRMICA: Temperatura máxima = {resultados['T2_max_C']:.1f} °C > 65 °C")
     else:
-        presion_actual = presion_final_tramo
-
-presion_final_entrega = presion_actual
-
-# 4. Cálculo Económico
-costo_tuberia_total = tubo["costo_m"] * (L_km * 1000) # $/m * metros
-costo_compresores_total = hp_total * 1500 # Asumimos 1500 USD por cada HP instalado
-CAPEX = costo_tuberia_total + costo_compresores_total
-
-# CRF (Capital Recovery Factor)
-CRF = (tasa_interes * (1 + tasa_interes)**anos_vida) / (((1 + tasa_interes)**anos_vida) - 1)
-
-# OPEX (Costo de energía)
-# 1 HP = 0.7457 kW, asumiendo operación 24/7 (8760 horas al año)
-energia_kwh = hp_total * 0.7457 * 8760
-OPEX = energia_kwh * costo_energia
-
-TAC = (CAPEX * CRF) + OPEX
-
-# ==========================================
-# PARTE PRINCIPAL: DASHBOARD Y RESULTADOS
-# ==========================================
-with col_main:
-    st.markdown("<h1>Proyecto: Optimización y Simulación Digital de Sistemas de Transporte de Gas</h1>", unsafe_allow_html=cha = 433.5 * ((flujo_gas/E)**2) * ((L_segmento_millas * gravedad_esp * T_in_R * Z) / (D_interno_pulg**5.33))
+        st.success(f"✅ Temperatura de descarga: {resultados['T2_max_C']:.1f} °C ≤ 65 °C")
     
-    p2_cuadrado = (p_actual**2) - parte_derecha
-    
-    # Si p2_cuadrado es negativo, significa que la presión llegó a cero antes de terminar
-    if p2_cuadrado <= 0:
-        p_llegada = 0
-        alerta_falla_flujo = True
+    if resultados['alerta_entrega']:
+        st.error(f"⚠️ Presión final de entrega = {resultados['presion_final']:.1f} psia < 500 psia")
     else:
-        p_llegada = math.sqrt(p2_cuadrado)
-        
-    presiones_distancia.append((i+1) * L_segmento_km)
-    presiones_valores.append(p_llegada)
+        st.success(f"✅ Presión de entrega: {resultados['presion_final']:.1f} psia ≥ 500 psia")
     
-    # Si no es el último segmento, hay una estación de compresión que vuelve a subir la presión a P_in
-    if i < segmentos - 1:
-        if p_llegada > 0:
-            # Fórmula de Potencia del PDF (Simplificada con unidades estándar)
-            # HP = (Q*10^6 / 24*3600*eta) * (Z*R*T / k-1) * [ (Pout/Pin)^((k-1)/k) - 1 ]
-            k = 1.3
-            eta = 0.75 # Eficiencia compresor
-            R = 0.287 # Constante de gas
-            
-            # Cálculo de temperatura de salida del compresor
-            T_out_K = T_in_K * ((P_in / p_llegada)**((k-1)/k))
-            if T_out_K > max_temp_out:
-                max_temp_out = T_out_K
-            
-            # Cálculo de HP (lo hicimos aprox porque la profe no dio R específico)
-            hp_estacion = (flujo_gas * 1000000 / (24 * 3600 * eta)) * (Z * R * T_in_K / (k-1)) * (((P_in / p_llegada)**((k-1)/k)) - 1)
-            potencia_total_hp += hp_estacion
-            
-        p_actual = P_in
-        presiones_distancia.append((i+1) * L_segmento_km)
-        presiones_valores.append(p_actual)
-
-presion:
-    st.markdown("<h1>Proyecto: Optimización y Simulación Digital de Sistemas de Transporte de Gas</h1>", unsafe_allow_html=True)
-    
-    # --- SISTEMA DE VALIDACIÓN Y ALERTAS ---
-    st.markdown("### 🚦 Sistema de Validación y Alertas")
-    col_a1, col_a2, col_a3 = st.columns(3)
-    
-    with col_a1:
-        if alerta_maop:
-            st.error(f"⚠️ MAOP Excedido. MAOP={MAOP:.1f} psia")
+    with st.expander("🔍 Ver detalles técnicos del diseño"):
+        st.write(f"**Diámetro interno:** {(pipe_data[diametro]['D_ext_mm'] - 2*pipe_data[diametro]['t_mm'])/25.4:.2f} pulg")
+        st.write(f"**Presión de descarga por estación:** {resultados['P_descarga']:.1f} psia")
+        st.write(f"**CAPEX total:** ${resultados['capex_total']:,.0f}")
+        st.write(f"**OPEX total anual:** ${resultados['opex_total']:,.0f}")
+        i = tasa_interes / 100.0
+        n = 20
+        if i > 0:
+            CRF = i * (1+i)**n / ((1+i)**n - 1)
         else:
-            st.success(f"✅ MAOP Seguro (Límite: {MAOP:.1f} psia)")
-            
-    with col_a2:
-        if alerta_temperatura:
-            st.error(f"🔥 Temp Alta: {temperatura_max:.1f}°C (>65°C)")
-        else:
-            st.success(f"❄️ Temp Segura: {temperatura_max:.1f}°C")
-            
-    with col_a3:
-        if alerta_entrega:
-            st.error(f"❌ Entrega fallida: {presion_llegada:.1f} psia (<500)")
-        elif presion_llegada == 0:True)
-    st.markdown("### Dashboard Principal")
-    
-    # --- MÉTRICAS ---
-    m1, m2, m3 = st.columns(3)
-    with m1:
-        st.metric("Costo Anualizado (TAC)", f"${TAC:,.2f}")
-    with m2:
-        st.metric("Potencia Instalada", f"{hp_total:,.0f} HP")
-    with m3:
-        st.metric("Presión Final de Entrega", f"{presion_final_entrega:,.1f} psia")
-        
-    st.divider()
-    
-    # --- C. SISTEMA DE VALIDACIÓN Y ALERTAS ---
-    st.markdown("### Sistema de Validación")
-    
-    # 1. Verificación MAOP
-    if Pin_psia > MAOP:
-        st.error(f"🚨 Peligro: Presión inicial ({Pin_psia} psia) SUPERA el límite MAOP ({MAOP:.1f} psia). Cambie espesor o grado de acero.")
-    else_final = presiones_valores[-1]
-max_temp_C = max_temp_out - 273.15 # Pasamos a Centígrados
-
-# --- CÁLCULOS ECONÓMICOS ---
-capex_tuberia = costo_tubo_m * (L_total_km * 1000)
-costo_por_hp = 1500 # Valor asumido en la industria
-capex_compresores = potencia_total_hp * costo_por_hp
-capex_total = capex_tuberia + capex_compresores
-
-# Factor de Recuperación de Capital (CRF) - Asumimos n = 20 años
-n_anios = 20
-i_tasa = tasa_interes / 100
-if i_tasa > 0:
-    CRF = (i_t
-            st.error("❌ El gas no llega al final (Presión 0)")
-        else:
-            st.success(f"✅ Entrega ok: {presion_llegada:.1f} psia")
-
-    # --- DASHBOARD DE MÉTRICAS ---
-    st.markdown("### 📊 Dashboard de Resultados")
-    col_m1, col_m2, col_m3 = st.columns(3)
-    col_m1.metric("Costo Total Anualizado (TAC)", f"${TAC/1e6:.2f} MM")
-    col_m2.metric("Potencia Total (HP)", f"{HP_total:.0f} HP")
-    col_m3.metric("Presión Final", f"{presion_llegada:.1f} psia")
-
-    # --- PERFIL HIDRÁULICO (Gráfico dinámico con Plotly) ---
-    st.markdown("### 📉 Perfil Hidráulico (Presión vs Distancia)")
-    
-    fig_hidraulica = go.Figure()
-    fig_hidraulica.add_trace(go.Scatter(x=distancias_plot:
-        st.success(f"✅ Diseño seguro por MAOP (Límite: {MAOP:.1f} psia).")
-        
-    # 2. Verificación Térmica
-    if temperatura_salida > 65:
-        st.error(f"🌡️ Alerta Térmica: La temperatura de descarga supera los 65°C (Alcanzó {temperatura_salida:.1f}°C).")
-    else:
-        st.success(f"✅ Temperatura en rango seguro (Máxima: {temperatura_salida:.1f}°C).")
-        
-    # 3. Cumplimiento de Entrega
-    if falla_presion:
-        st.error("📉 El gasoducto se queda sin presión antes de llegar. Necesita más estaciones de compresión o mayor diámetro.")
-    elif presion_final_entrega < Pout_min_psia:
-        st.warning(f"⚠️ Presión de entrega insuficiente. Llegó a {presion_final_entrega:.1f} psia, mínimo requerido es {Pout_min_psia} psia.")
-    else:
-        st.success("✅ Cumple con la presión mínima de entrega.")
-
-    st.divider()
-
-    #asa * ((1 + i_tasa)**n_anios)) / (((1 + i_tasa)**n_anios) - 1)
+            CRF = 1/n
+        st.write(f"**Factor CRF (i={tasa_interes}%, 20 años):** {CRF:.4f}")
 else:
-    CRF = 1/n_anios
-
-# OP, y=presiones_plot, mode='lines+markers', 
-                                        line=dict(color=' --- B. VISUALIZACIÓN PRINCIPAL (GRÁFICOS) ---
-    st.markdown("### Perfil Hidráulico y Análisis Económico")
-    
-    graf_col1, graf_col2 = st.columns(2)
-EX (Energía) - Asumimos 8000 horas de operación al año. 1 HP = 0aquamarine', width=3),
-                                        marker=dict(size=8, color='white'),
-                                        name    
-    with graf_col1:
-        # Gráfico Perfil Hidráulico usando Plotly
-        df_="Perfil de Presión"))
-    # Línea de la presión mínima
-    fig_hidraulica.add_grafico = pd.DataFrame({
-            "Distancia [km]": distancias_grafico,
-            ".7457 kW
-opex_energia = potencia_total_hp * 0.7457Presión [psia]": presiones_grafico
-        })
-        fig_presion = px.linehline(y=500, line_dash="dash", line_color="red", annotation_text="Presión Mínima * 8000 * costo_energia
-
-TAC = (capex_total * CRF) + opex_(df_grafico, x="Distancia [km]", y="Presión [psia]", 
-                              title (500 psia)")
-    
-    fig_hidraulica.update_layout(
-        plot_bgcolor='black',
-energia
-
-# ==========================================
-# 5. VISUALIZACIÓN PRINCIPAL (Lado Izquierdo)
-#        paper_bgcolor='black',
-        font=dict(color='white'),
-        xaxis_title="Distancia [km]",
-        yaxis_title="Presión [psia]",
-        margin=dict(l=20, r=20, t=20, b=20)
-    )
-    st.plotly_chart(fig_hidraulica, use_container_width=True)
-
-    # --- DESGL="Perfil Hidráulico del Gasoducto",
-                              markers=True)
-        # Línea roja punteada para mostrar la presión mínima
-        fig_presion.add_hline(y=Pout_min_psia, line_dash="dash", line_color="red", annotation_text="Presión Mínima (500 psia)") ==========================================
-with col_principal:
-    # --- SISTEMA DE VALIDACIÓN Y ALERTAS ---
-    st.markdown("### 🚨 Sistema de Validación")
-    alerta_col1, alerta_col2, alerta_col3 = st.columns(3)
-    
-    with alerta_col1:
-        if P_OSE DE COSTOS (Gráfico de sectores) ---
-    st.markdown("### 💰 Desglose de
-        # Para que se vea bien en fondo negro
-        fig_presion.update_layout(plot_bgcolor='black', paper_bgcolor='black', font_color='white')
-        st.plotly_chart(fig_presin > MAOP:
-            st.error(f"¡MAOP Superado! Presión={P_in} > MA Costos")
-    etiquetas_costos = ['CAPEX Tubería', 'CAPEX Compresoresion, use_container_width=True)
-
-    with graf_col2:
-        # Gráfico DesOP={round(MAOP,1)}")
-        else:
-            st.success(f"MAOP Seguro (Max', 'OPEX Anual (Energía)']
-    valores_costos = [capex_tuberia * CRF, capex_: {round(MAOP,1)} psia)")
-            
-    with alerta_col2:
-        ifglose de Costos
-        # Evaluamos el peso del CAPEX anualizado vs OPEX
-        costos = { max_temp_C > 65:
-            st.error(f"¡Alerta Térmicacompresores * CRF, OPEX_anual] # Comparamos todo anualizado
-    
-    fig_costos = go
-            "Categoría": ["CAPEX Anualizado", "OPEX (Energía)"],
-            "C! Temp={round(max_temp_C,1)}°C")
-        else:
-            st..Figure(data=[go.Pie(labels=etiquetas_costos, values=valores_costos, hole=.osto (USD)": [CAPEX * CRF, OPEX]
-        }
-        df_costos = pd.DataFrame(costos)
-        fig_costos = px.pie(df_costos, namessuccess(f"Temp. Segura ({round(max_temp_C,1)}°C)")
-            3)])
-    fig_costos.update_traces(marker=dict(colors=['#1f77b4', '#
-    with alerta_col3:
-        if presion_final < 500 or alerta_fallaff7f0e', '#2ca02c']))
-    fig_costos.update_layout(="Categoría", values="Costo (USD)", 
-                            title="Desglose del TAC (CAPEX vs OPEX
-        plot_bgcolor='black',
-        paper_bgcolor='black',
-        font=dict(color='_flujo:
-            st.error(f"¡Falla en Entrega! Pf={round(presion_)",
-                            color_discrete_sequence=['aquamarine', '#4da6ff'])
-        fig_costos.update_layoutwhite'),
-        margin=dict(l=20, r=20, t=20, bfinal,1)} psia")
-        else:
-            st.success(f"Entrega Cumplida ({=20)
-    )
-    st.plotly_chart(fig_costos, use_container_(paper_bgcolor='black', font_color='white')
-        st.plotly_chart(fig_costround(presion_final,1)} psia)")
-
-    # --- DASHBOARD DE MÉTRICAS ---
-    os, use_container_width=True)
+    st.error("No se pudo calcular con los parámetros actuales. Revise los valores ingresados.")
