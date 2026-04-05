@@ -20,12 +20,12 @@ st.markdown("""
         background-color: #000000;
     }
 
-    /* Título principal: GRANDE, mismo color que las tarjetas (aguamarina) */
+    /* Título principal */
     .titulo-principal {
         font-family: 'Arial Black', sans-serif;
-        font-size: 4rem !important;          /* Tamaño grande y legible */
+        font-size: 4rem !important;
         font-weight: 800;
-        color: #7FFFD4;               /* Aguamarina, como el título de configuración */
+        color: #7FFFD4;
         text-align: center;
         margin-bottom: 0.2rem;
         letter-spacing: 2px;
@@ -33,7 +33,7 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     
-    /* Subtítulo: más pequeño, blanco, elegante */
+    /* Subtítulo */
     .subtitulo-principal {
         font-family: 'Poppins', 'Segoe UI', sans-serif;
         font-size: 28px !important;
@@ -45,7 +45,7 @@ st.markdown("""
         letter-spacing: 1px;
     }
     
-    /* Encabezados de sección (RESULTADOS, Perfil Hidráulico, etc.) */
+    /* Encabezados de sección */
     .seccion-titulo {
         font-family: 'Poppins', 'Segoe UI', sans-serif;
         font-size: 28px;
@@ -57,9 +57,9 @@ st.markdown("""
         padding-left: 15px;
     }
     
-    /* Tarjetas de métricas (mismo color que el título) */
+    /* Tarjetas de métricas */
     .metric-card {
-        background-color: #ccccc;   /* Azul os */
+        background-color: #1E1E2E;
         border-radius: 20px;
         padding: 25px 15px;
         text-align: center;
@@ -81,7 +81,7 @@ st.markdown("""
         font-family: 'Poppins', 'Segoe UI', sans-serif;
         font-size: 36px;
         font-weight: 700;
-        color: #7FFFD4;   /* Aguamarina */
+        color: #7FFFD4;
         margin: 0;
     }
     .metric-unit {
@@ -91,7 +91,7 @@ st.markdown("""
         color: #FFFFFF;
     }
     
-    /* Descripciones en sidebar (amarillo suave) */
+    /* Descripciones en sidebar */
     .descripcion {
         font-size: 13px;
         color: #FFFACD;
@@ -103,16 +103,36 @@ st.markdown("""
         font-family: 'Poppins', 'Segoe UI', sans-serif;
     }
     
-    /* Ajustes para los expanders de la sidebar */
+    /* ========== BARRA LATERAL Y EXPANDERS NEGROS ========== */
+    /* Fondo de la barra lateral */
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"] > div,
+    section[data-testid="stSidebar"] div[data-testid="stSidebarContent"],
+    .css-1d391kg, .st-emotion-cache-1d391kg,
+    .st-emotion-cache-16txtl3, .st-emotion-cache-1v0mbdj {
+        background-color: #000000 !important;
+    }
+    
+    /* Expanders dentro de la barra lateral */
+    section[data-testid="stSidebar"] .streamlit-expanderHeader,
+    section[data-testid="stSidebar"] .streamlit-expanderContent {
+        background-color: #000000 !important;
+    }
+    
+    /* Encabezados de expander (color del texto) */
     .streamlit-expanderHeader {
         font-family: 'Poppins', 'Segoe UI', sans-serif;
         font-weight: 600;
         font-size: 18px;
-        color: #7FFFD4;
-          /* ========== BARRA LATERAL NEGRA ========== */
-    section[data-testid="stSidebar"] {
+        color: #7FFFD4 !important;
         background-color: #000000 !important;
-        border-right: 1px solid #2c5a9e;
+    }
+    
+    /* Inputs y otros elementos */
+    section[data-testid="stSidebar"] .stNumberInput,
+    section[data-testid="stSidebar"] .stSelectbox,
+    section[data-testid="stSidebar"] .stSlider {
+        background-color: #000000 !important;
     }
     </style>
 """, unsafe_allow_html=True)
