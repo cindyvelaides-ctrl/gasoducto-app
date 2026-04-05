@@ -112,11 +112,7 @@ st.markdown("""
     .st-emotion-cache-16txtl3, .st-emotion-cache-1v0mbdj {
         background-color: #000000 !important;
     }
-    
-    /* Expanders dentro de la barra lateral */
-    section[data-testid="stSidebar"] .streamlit-expanderHeader,
-    section[data-testid="stSidebar"] .streamlit-expanderContent {
-        background-color: #000000 !important;
+
     }
     
     /* Encabezados de expander (color del texto) */
