@@ -142,117 +142,149 @@ st.markdown("""
 st.markdown('<p class="titulo-principal">💨 GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitulo-principal">Gemelo digital | Simulación hidráulica & económica</p>', unsafe_allow_html=True)
 
-# ------------------ FUNCIONES DE CÁLCULO ------------------
+# ------------------ FUNCIONES DE CÁLCULO (CORREGIDAS) ------------------
 L_km = 400.0
 L_miles = L_km * 0.621371
 T1_K = 293.15
-T1_R = T1_K * 9/5
+T1_R = T1_K * 9/5        # Rankine
 gamma = 0.65
 Z = 0.90
-k = 1.28
-eta = 0.85
-horas_anio = 8760
+k = 1.28                 # Relación de calores específicos (dato típico)
+eta = 0.85               # Eficiencia del compresor
+horas_anio = 8760        # horas de operación por año
 
+# Constante universal
+R_univ = 10.7316         # psi·ft³/(lbmol·R)
+MW_aire = 28.97
+MW = gamma * MW_aire     # lb/lbmol
+R_esp = R_univ / MW      # psi·ft³/(lbm·R)   (constante específica)
+
+# Factor de conversión para potencia (de la ecuación del enunciado)
+# La fórmula: HP = (Q*1e6)/(24*3600*η) * (Z*R_esp*T1_R)/(k-1) * [(Pout/Pin)^((k-1)/k) - 1]
+# El primer factor da scf/s. Multiplicado por (Z*R_esp*T1_R)/(k-1) da (lbf·ft/lbm)·(scf/s)
+# Para obtener HP (550 lbf·ft/s = 1 HP), necesitamos convertir scf a lb usando la densidad en condiciones estándar.
+# Pero como la fórmula del enunciado ya está "adimensionalizada", asumimos que R_esp está en (lbf·ft)/(lbm·R)
+# y que Q está en MMscfd. Para evitar confusiones, usaremos una versión común en ingeniería:
+# HP = 0.0857 * Q * (Z * T1_R / MW) * (k/(k-1)) * (r^((k-1)/k) - 1) / eta  (con Q en MMscfd, T1_R en R, MW en lb/lbmol)
+# Este factor 0.0857 proviene de (1e6)/(24*3600)* (R_univ/550) etc. Es ampliamente usado.
+# Lo dejamos así para mantener coherencia con cálculos previos que sí daban resultados razonables.
+# Pero para mayor precisión, usaremos la fórmula directa con la densidad estándar.
+# Vamos a implementar la fórmula correcta paso a paso.
+
+def potencia_compresor(Q_MMscfd, P_suc_psia, P_desc_psia, T_suc_R, Z, k, MW, eta):
+    """
+    Calcula la potencia en HP usando la fórmula termodinámica estándar.
+    Q_MMscfd: flujo en millones de pies cúbicos por día (base 14.7 psia, 60°F)
+    """
+    # Flujo másico en lb/s
+    Q_scf_s = Q_MMscfd * 1e6 / (24 * 3600)   # scf/s
+    # Densidad del gas en condiciones estándar (14.7 psia, 60°F = 520 R)
+    P_std = 14.7          # psia
+    T_std = 520           # Rankine
+    Z_std = 1.0
+    rho_std = (P_std * 144) * MW / (R_univ * T_std)   # lb/scf (144 para convertir psia a lbf/ft²)
+    m_dot = Q_scf_s * rho_std                         # lb/s
+    # Relación de compresión
+    r = P_desc_psia / P_suc_psia
+    # Exponente politrópico
+    n = (k - 1) / k
+    # Head politrópico (ft·lbf/lb)
+    H_p = (Z * R_esp * T_suc_R) * (1 / n) * (pow(r, n) - 1)
+    # Potencia en HP
+    HP = (m_dot * H_p) / (550 * eta)
+    return HP
+
+def weymouth_drop(P1, Q, L_mi, D_in, gamma, T_R, Z):
+    """Retorna P2 (psia) después de un segmento de longitud L_mi (millas)"""
+    const = 433.5
+    term = const * (Q**2) * L_mi * gamma * T_R * Z / (pow(D_in, 5.33))
+    P2_sq = P1**2 - term
+    if P2_sq <= 0:
+        return 0.1
+    return sqrt(P2_sq)
+
+def calcular_MAOP(D_ext_in, t_in, SMYS_psi, F):
+    return 2 * SMYS_psi * F * t_in / D_ext_in
+
+# Datos de tuberías y aceros (igual que antes)
 pipe_data_base = {
     "12\"": {"D_ext_mm": 323.8, "t_mm": 10.31, "costo_m": 185},
     "16\"": {"D_ext_mm": 406.4, "t_mm": 12.70, "costo_m": 260},
     "20\"": {"D_ext_mm": 508.0, "t_mm": 15.09, "costo_m": 350},
     "24\"": {"D_ext_mm": 609.6, "t_mm": 17.48, "costo_m": 440},
 }
-
 steel_data = {
     "X52": {"SMYS_psi": 52000, "F": 0.72},
     "X60": {"SMYS_psi": 60000, "F": 0.72},
 }
 
-def calcular_MAOP(D_ext_in, t_in, SMYS_psi, F):
-    return 2 * SMYS_psi * F * t_in / D_ext_in
-
-def weymouth_k_loss(Q_MMscfd, L_seg_millas, D_in_pulg, gamma, T_R, Z):
-    return 433.5 * (Q_MMscfd**2) * L_seg_millas * gamma * T_R * Z / (D_in_pulg**5.33)
-
 def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_actual):
-    diam_nom = diametro
-    D_ext_mm = pipe_data_actual[diam_nom]["D_ext_mm"]
-    t_mm = pipe_data_actual[diam_nom]["t_mm"]
+    # Extraer datos de tubería
+    D_ext_mm = pipe_data_actual[diametro]["D_ext_mm"]
+    t_mm = pipe_data_actual[diametro]["t_mm"]
     D_int_mm = D_ext_mm - 2*t_mm
     D_int_pulg = D_int_mm / 25.4
-    costo_pipe_m = pipe_data_actual[diam_nom]["costo_m"]
+    costo_pipe_m = pipe_data_actual[diametro]["costo_m"]
     
+    # Datos del acero
     SMYS_psi = steel_data[grado_acero]["SMYS_psi"]
     F = steel_data[grado_acero]["F"]
-    
     D_ext_pulg = D_ext_mm / 25.4
     t_pulg = t_mm / 25.4
     MAOP_psi = calcular_MAOP(D_ext_pulg, t_pulg, SMYS_psi, F)
     
-    L_seg_millas = L_miles / N          # millas por segmento (entre compresores)
+    # Longitud de cada segmento (millas). Hay N+1 segmentos (entre estaciones)
+    L_seg_mi = L_miles / (N + 1)
     
-    # Simulación de presión a lo largo del gasoducto
+    # Inicializar vectores
     distancias_km = [0.0]
-    presiones_psi = [800.0]              # presión inicial
+    presiones_psi = [800.0]   # presión inicial
     P_actual = 800.0
     HP_total = 0.0
     T2_max_C = 0.0
     
-    # Para cada estación (cada compresor)
+    # Simular los primeros N segmentos (cada uno seguido de un compresor)
     for i in range(N):
-        # 1. Caída de presión en el segmento i (desde P_actual)
-        K_seg = weymouth_k_loss(Q, L_seg_millas, D_int_pulg, gamma, T1_R, Z)
-        if K_seg < 0:
-            return None
-        # Presión al final del segmento (antes de comprimir)
-        P_fin_seg = sqrt(P_actual**2 - K_seg)
-        if P_fin_seg < 0.1:
-            return None
-        dist_km = (i+1) * (L_km / N)
+        # Caída en el segmento i+1
+        P_fin_seg = weymouth_drop(P_actual, Q, L_seg_mi, D_int_pulg, gamma, T1_R, Z)
+        dist_km = (i+1) * (L_km / (N+1))
         distancias_km.append(dist_km)
         presiones_psi.append(P_fin_seg)
         
-        # 2. Compresor: eleva la presión a 800 psia
+        # Compresor: eleva la presión a 800 psia
         P_suc = P_fin_seg
         P_desc = 800.0
-        r = P_desc / P_suc
-        # Calcular potencia de este compresor
-        factor = 0.0857
-        HP_est = factor * Q * P_suc * (pow(r, (k-1)/k) - 1) / eta
-        HP_total += HP_est
+        HP = potencia_compresor(Q, P_suc, P_desc, T1_R, Z, k, MW, eta)
+        HP_total += HP
         
         # Temperatura de descarga
-        T2_K = T1_K * pow(r, (k-1)/k)
-        T2_C = T2_K - 273.15
+        r = P_desc / P_suc
+        T2_R = T1_R * pow(r, (k-1)/k)
+        T2_C = T2_R - 491.67   # Convertir Rankine a Celsius (491.67 = 459.67+32)
         if T2_C > T2_max_C:
             T2_max_C = T2_C
         
         # Actualizar presión para el siguiente segmento
         P_actual = P_desc
-        
-        # Si no es el último compresor, añadir punto de presión de descarga (opcional para el gráfico)
+        # Agregar punto de presión de descarga (para el gráfico)
         if i < N-1:
             distancias_km.append(dist_km)
             presiones_psi.append(P_desc)
     
-    # Después del último compresor, el gas viaja un segmento más hasta la entrega.
-    # Última caída desde P_actual (800) hasta la presión final
-    K_ultimo = weymouth_k_loss(Q, L_seg_millas, D_int_pulg, gamma, T1_R, Z)
-    if K_ultimo < 0:
-        return None
-    P_final = sqrt(P_actual**2 - K_ultimo)
-    if P_final < 0.1:
-        return None
-    dist_final_km = L_km
-    distancias_km.append(dist_final_km)
+    # Último segmento (sin compresor al final)
+    P_final = weymouth_drop(P_actual, Q, L_seg_mi, D_int_pulg, gamma, T1_R, Z)
+    distancias_km.append(L_km)
     presiones_psi.append(P_final)
     
     # Alertas
-    supera_maop = P_desc > MAOP_psi   # P_desc = 800
-    alerta_termica = T2_max_C > 65.0
-    alerta_entrega = P_final < 500.0
+    supera_maop = (800.0 > MAOP_psi)   # la presión de descarga es 800 psia
+    alerta_termica = (T2_max_C > 65.0)
+    alerta_entrega = (P_final < 500.0)
     
     # Costos
     longitud_m = L_km * 1000
     capex_pipe = longitud_m * costo_pipe_m
-    capex_comp = HP_total * 1500.0
+    capex_comp = HP_total * 1500.0   # costo estándar por HP instalado
     
     i_tasa = params_economicos["tasa_interes"] / 100.0
     n = 20
@@ -279,7 +311,7 @@ def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_ac
         "TAC": TAC,
         "HP_total": HP_total,
         "presion_final": P_final,
-        "P_descarga": P_desc,
+        "P_descarga": 800.0,
         "MAOP": MAOP_psi,
         "supera_MAOP": supera_maop,
         "alerta_termica": alerta_termica,
@@ -405,9 +437,9 @@ if resultados:
     # Validación de seguridad
     st.markdown('<div class="seccion-titulo">⚠️ VALIDACIÓN DE SEGURIDAD</div>', unsafe_allow_html=True)
     if resultados['supera_MAOP']:
-        st.error(f"🚨 ALERTA: Presión de descarga ({resultados['P_descarga']:.1f} psia) > MAOP ({resultados['MAOP']:.1f} psia)")
+        st.error(f"🚨 ALERTA: Presión de descarga (800 psia) > MAOP ({resultados['MAOP']:.1f} psia)")
     else:
-        st.success(f"✅ MAOP verificado: {resultados['P_descarga']:.1f} ≤ {resultados['MAOP']:.1f} psia")
+        st.success(f"✅ MAOP verificado: 800 psia ≤ {resultados['MAOP']:.1f} psia")
     
     if resultados['alerta_termica']:
         st.error(f"🔥 ALERTA TÉRMICA: Temperatura máxima = {resultados['T2_max_C']:.1f} °C > 65 °C")
@@ -421,7 +453,7 @@ if resultados:
     
     with st.expander("🔍 Ver detalles técnicos del diseño"):
         st.write(f"**Diámetro interno:** {(pipe_data[diametro]['D_ext_mm'] - 2*pipe_data[diametro]['t_mm'])/25.4:.2f} pulg")
-        st.write(f"**Presión de descarga por estación:** {resultados['P_descarga']:.1f} psia")
+        st.write(f"**Presión de descarga por estación:** 800 psia")
         st.write(f"**CAPEX total:** ${resultados['capex_total']:,.0f}")
         st.write(f"**OPEX total anual:** ${resultados['opex_total']:,.0f}")
         i = tasa_interes / 100.0
