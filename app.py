@@ -109,6 +109,15 @@ st.markdown("""
         font-weight: 600;
         font-size: 18px;
         color: #7FFFD4;
+
+         /* ========== BARRA LATERAL NEGRA ========== */
+    section[data-testid="stSidebar"] {
+        background-color: #000000 !important;
+        border-right: 1px solid #2c5a9e;
+    }
+    section[data-testid="stSidebar"] .st-emotion-cache-1d391kg,
+    section[data-testid="stSidebar"] .css-1d391kg {
+        background-color: #000000 !important;
     }
     </style>
 """, unsafe_allow_html=True)
