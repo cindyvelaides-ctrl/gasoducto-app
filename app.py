@@ -23,7 +23,7 @@ st.markdown("""
     /* Título principal: GRANDE, mismo color que las tarjetas (aguamarina) */
     .titulo-principal {
         font-family: 'Arial Black', sans-serif;
-        font-size: 4.5rem !important;          /* Tamaño grande y legible */
+        font-size: 4rem !important;          /* Tamaño grande y legible */
         font-weight: 800;
         color: #7FFFD4;               /* Aguamarina, como el título de configuración */
         text-align: center;
@@ -109,6 +109,24 @@ st.markdown("""
         font-weight: 600;
         font-size: 18px;
         color: #7FFFD4;
+          /* ========== BARRA LATERAL NEGRA ========== */
+    section[data-testid="stSidebar"] {
+        background-color: #000000 !important;
+        border-right: 1px solid #2c5a9e;
+    }
+    section[data-testid="stSidebar"] .st-emotion-cache-1d391kg,
+    section[data-testid="stSidebar"] .css-1d391kg {
+        background-color: #000000 !important;
+    }
+    [data-testid="stSidebar"] .streamlit-expanderHeader {
+        background-color: #000000 !important;
+        color: #7FFFD4 !important;
+    }
+    [data-testid="stSidebar"] .streamlit-expanderContent {
+        background-color: #000000 !important;
+    }
+    [data-testid="stSidebar"] div {
+        background-color: #000000 !important;
     }
     </style>
 """, unsafe_allow_html=True)
