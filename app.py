@@ -7,116 +7,84 @@ from math import sqrt, pow
 # ------------------ CONFIGURACIÓN DE LA PÁGINA ------------------
 st.set_page_config(page_title="Gasoducto Trans-Andino", layout="wide")
 
-# Estilos CSS personalizados para homogeneidad
+# ESTILOS CSS: MODO NEGRO TOTAL Y TÍTULO MONUMENTAL
 st.markdown("""
     <style>
-    /* Fuente global profesional */
-    html, body, .stApp, .stMarkdown, .stText, .stNumberInput, .stSelectbox, .stSlider {
-        font-family: 'Poppins', 'Segoe UI', 'Roboto', sans-serif;
-    }
-    
-    /* Fondo negro */
-    .stApp {
-        background-color: #000000;
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+
+    /* 1. FONDO NEGRO ABSOLUTO EN TODA LA APP */
+    .stApp, [data-testid="stSidebar"], section[data-testid="stSidebar"] > div {
+        background-color: #000000 !important;
     }
 
-    /* Título principal: GRANDE, mismo color que las tarjetas */
+    /* 2. TEXTO GLOBAL EN BLANCO */
+    html, body, [class*="st-"], div, label, p {
+        color: #FFFFFF !important;
+        font-family: 'Poppins', sans-serif !important;
+    }
+
+    /* 3. TÍTULO GIGANTE Y CENTRADO */
     .titulo-principal {
         font-family: 'Arial Black', sans-serif;
-        font-size: 15vW;          /* Tamaño fijo enorme */
-        font-weight: 800;
-        color: #7FFFD4          /* Acuamarine */
+        font-size: 8vw; /* Tamaño dinámico enorme */
+        font-weight: 900;
+        color: #7FFFD4 !important; /* Aguamarina */
         text-align: center;
-        margin-bottom: 0.2rem;
-        letter-spacing: 2px;
+        margin-top: -60px;
+        margin-bottom: 0px;
         text-transform: uppercase;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        letter-spacing: -2px;
+        line-height: 1;
     }
     
-    /* Subtítulo: más pequeño, blanco, elegante */
     .subtitulo-principal {
-        font-family: 'Poppins', 'Segoe UI', sans-serif;
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 300;
-        color: #FFFFFF;
+        color: #888888 !important;
         text-align: center;
-        margin-top: -10px;
-        margin-bottom: 40px;
-        letter-spacing: 1px;
+        margin-bottom: 50px;
+        letter-spacing: 5px;
+        text-transform: uppercase;
     }
-    
-    /* Encabezados de sección (RESULTADOS, Perfil Hidráulico, etc.) */
-    .seccion-titulo {
-        font-family: 'Poppins', 'Segoe UI', sans-serif;
-        font-size: 28px;
-        font-weight: 600;
-        color: #FFFFFF;
-        margin-top: 30px;
-        margin-bottom: 20px;
-        border-left: 5px solid #7FFFD4;
-        padding-left: 15px;
+
+    /* 4. SIDEBAR: CUADROS DE TEXTO Y SELECCIÓN EN NEGRO */
+    [data-testid="stSidebar"] input, 
+    [data-testid="stSidebar"] select, 
+    [data-testid="stSidebar"] div[role="listbox"],
+    [data-testid="stSidebar"] .stNumberInput div,
+    [data-testid="stSidebar"] .stSelectbox div {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #333333 !important;
     }
-    
-    /* Tarjetas de métricas (mismo color que el título) */
+
+    /* 5. TARJETAS DE MÉTRICAS */
     .metric-card {
-        background-color: #ccccc;   /* Azul os */
+        background-color: #0A0A0A;
         border-radius: 20px;
-        padding: 25px 15px;
+        padding: 30px 15px;
         text-align: center;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-        border: 1px solid #2c5a9e;
-        transition: transform 0.2s;
+        border: 1px solid #1A1A1A;
+        box-shadow: 0 4px 20px rgba(127, 255, 212, 0.05);
     }
-    .metric-card:hover {
-        transform: translateY(-5px);
-    }
-    .metric-label {
-        font-family: 'Poppins', 'Segoe UI', sans-serif;
-        font-size: 18px;
-        font-weight: 500;
-        color: #DDDDDD;
-        margin-bottom: 12px;
-    }
-    .metric-value {
-        font-family: 'Poppins', 'Segoe UI', sans-serif;
-        font-size: 36px;
-        font-weight: 700;
-        color: #7FFFD4;   /* Aguamarina */
-        margin: 0;
-    }
-    .metric-unit {
-        font-family: 'Poppins', 'Segoe UI', sans-serif;
-        font-size: 18px;
-        font-weight: 400;
-        color: #FFFFFF;
-    }
-    
-    /* Descripciones en sidebar (amarillo suave) */
-    .descripcion {
-        font-size: 13px;
-        color: #FFFACD;
-        margin-bottom: 8px;
-        font-style: italic;
-        background-color: #2E2E2E;
-        padding: 5px 8px;
-        border-radius: 8px;
-        font-family: 'Poppins', 'Segoe UI', sans-serif;
-    }
-    
-    /* Ajustes para los expanders de la sidebar */
-    .streamlit-expanderHeader {
-        font-family: 'Poppins', 'Segoe UI', sans-serif;
+    .metric-label { font-size: 16px; color: #888888 !important; text-transform: uppercase; margin-bottom: 10px; }
+    .metric-value { font-size: 42px; font-weight: 700; color: #7FFFD4 !important; }
+
+    /* Títulos de sección */
+    .seccion-titulo {
+        font-size: 26px;
         font-weight: 600;
-        font-size: 18px;
-        color: #7FFFD4;
+        color: #FFFFFF;
+        margin-top: 40px;
+        border-left: 6px solid #7FFFD4;
+        padding-left: 15px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Títulos
-st.markdown('<p class="titulo-principal">🔥 GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
-st.markdown('<p class="subtitulo-principal">Gemelo digital | Simulación hidráulica & económica</p>', unsafe_allow_html=True)
-
+# Títulos Principales
+st.markdown('<p class="titulo-principal">GASODUCTO <br> TRANS-ANDINO</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitulo-principal">Gemelo Digital | Simulación Hidráulica & Económica</p>', unsafe_allow_html=True)
 # ------------------ FUNCIONES DE CÁLCULO ------------------
 L_km = 400.0
 L_miles = L_km * 0.621371
