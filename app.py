@@ -36,7 +36,7 @@ st.markdown("""
     /* Subtítulo: más pequeño, blanco, elegante */
     .subtitulo-principal {
         font-family: 'Poppins', 'Segoe UI', sans-serif;
-        font-size: 28px;
+        font-size: 28px !important;
         font-weight: 300;
         color: #FFFFFF;
         text-align: center;
