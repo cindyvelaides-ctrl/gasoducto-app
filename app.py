@@ -260,7 +260,7 @@ def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_ac
         # Temperatura de descarga
         r = P_desc / P_suc
         T2_R = T1_R * pow(r, (k-1)/k)
-        T2_C = T2_R - 491.67   # Convertir Rankine a Celsius (491.67 = 459.67+32)
+        T2_C = (T2_R - 491.67) * 5/9
         if T2_C > T2_max_C:
             T2_max_C = T2_C
         
