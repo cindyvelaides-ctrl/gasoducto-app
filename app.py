@@ -7,113 +7,117 @@ from math import sqrt, pow
 # ------------------ CONFIGURACIÓN DE LA PÁGINA ------------------
 st.set_page_config(page_title="Gasoducto Trans-Andino", layout="wide")
 
-# ------------------ ESTILOS BASE (se actualizarán dinámicamente) ------------------
-def apply_css(title_font_size_rem, subtitle_font_size_px):
-    st.markdown(f"""
-        <style>
-        /* Fuente global profesional */
-        html, body, .stApp, .stMarkdown, .stText, .stNumberInput, .stSelectbox, .stSlider {{
-            font-family: 'Poppins', 'Segoe UI', 'Roboto', sans-serif;
-        }}
-        
-        /* Fondo negro */
-        .stApp {{
-            background-color: #000000;
-        }}
+# Estilos CSS personalizados para homogeneidad
+st.markdown("""
+    <style>
+    /* Fuente global profesional */
+    html, body, .stApp, .stMarkdown, .stText, .stNumberInput, .stSelectbox, .stSlider {
+        font-family: 'Poppins', 'Segoe UI', 'Roboto', sans-serif;
+    }
+    
+    /* Fondo negro */
+    .stApp {
+        background-color: #000000;
+    }
 
-        /* Título principal: tamaño dinámico */
-        .titulo-principal {{
-            font-family: 'Arial Black', sans-serif;
-            font-size: {title_font_size_rem}rem;
-            font-weight: 800;
-            color: #7FFFD4;
-            text-align: center;
-            margin-bottom: 0.2rem;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
-        }}
-        
-        /* Subtítulo */
-        .subtitulo-principal {{
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-            font-size: {subtitle_font_size_px}px;
-            font-weight: 400;
-            color: #FFFFFF;
-            text-align: center;
-            margin-top: -10px;
-            margin-bottom: 40px;
-            letter-spacing: 1px;
-        }}
-        
-        /* Encabezados de sección */
-        .seccion-titulo {{
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-            font-size: 28px;
-            font-weight: 600;
-            color: #FFFFFF;
-            margin-top: 30px;
-            margin-bottom: 20px;
-            border-left: 5px solid #7FFFD4;
-            padding-left: 15px;
-        }}
-        
-        /* Tarjetas de métricas */
-        .metric-card {{
-            background-color: #1E1E2E;
-            border-radius: 20px;
-            padding: 25px 15px;
-            text-align: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-            border: 1px solid #2c5a9e;
-            transition: transform 0.2s;
-        }}
-        .metric-card:hover {{
-            transform: translateY(-5px);
-        }}
-        .metric-label {{
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-            font-size: 18px;
-            font-weight: 500;
-            color: #DDDDDD;
-            margin-bottom: 12px;
-        }}
-        .metric-value {{
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-            font-size: 36px;
-            font-weight: 700;
-            color: #7FFFD4;
-            margin: 0;
-        }}
-        .metric-unit {{
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-            font-size: 18px;
-            font-weight: 400;
-            color: #FFFFFF;
-        }}
-        
-        /* Descripciones en sidebar */
-        .descripcion {{
-            font-size: 13px;
-            color: #FFFACD;
-            margin-bottom: 8px;
-            font-style: italic;
-            background-color: #2E2E2E;
-            padding: 5px 8px;
-            border-radius: 8px;
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-        }}
-        
-        .streamlit-expanderHeader {{
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-            font-weight: 600;
-            font-size: 18px;
-            color: #7FFFD4;
-        }}
-        </style>
-    """, unsafe_allow_html=True)
+    /* Título principal: GRANDE, mismo color que las tarjetas (aguamarina) */
+    .titulo-principal {
+        font-family: 'Arial Black', sans-serif;
+        font-size: 4.5rem;          /* Tamaño grande y legible */
+        font-weight: 800;
+        color: #7FFFD4;               /* Aguamarina, como el título de configuración */
+        text-align: center;
+        margin-bottom: 0.2rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    /* Subtítulo: más pequeño, blanco, elegante */
+    .subtitulo-principal {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 22px;
+        font-weight: 300;
+        color: #FFFFFF;
+        text-align: center;
+        margin-top: -10px;
+        margin-bottom: 40px;
+        letter-spacing: 1px;
+    }
+    
+    /* Encabezados de sección (RESULTADOS, Perfil Hidráulico, etc.) */
+    .seccion-titulo {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 28px;
+        font-weight: 600;
+        color: #FFFFFF;
+        margin-top: 30px;
+        margin-bottom: 20px;
+        border-left: 5px solid #7FFFD4;
+        padding-left: 15px;
+    }
+    
+    /* Tarjetas de métricas (mismo color que el título) */
+    .metric-card {
+        background-color: #ccccc;   /* Azul os */
+        border-radius: 20px;
+        padding: 25px 15px;
+        text-align: center;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        border: 1px solid #2c5a9e;
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    .metric-label {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        color: #DDDDDD;
+        margin-bottom: 12px;
+    }
+    .metric-value {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: #7FFFD4;   /* Aguamarina */
+        margin: 0;
+    }
+    .metric-unit {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-size: 18px;
+        font-weight: 400;
+        color: #FFFFFF;
+    }
+    
+    /* Descripciones en sidebar (amarillo suave) */
+    .descripcion {
+        font-size: 13px;
+        color: #FFFACD;
+        margin-bottom: 8px;
+        font-style: italic;
+        background-color: #2E2E2E;
+        padding: 5px 8px;
+        border-radius: 8px;
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+    }
+    
+    /* Ajustes para los expanders de la sidebar */
+    .streamlit-expanderHeader {
+        font-family: 'Poppins', 'Segoe UI', sans-serif;
+        font-weight: 600;
+        font-size: 18px;
+        color: #7FFFD4;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# ------------------ PARÁMETROS FIJOS ------------------
+# Títulos (con emoji de gas 💨)
+st.markdown('<p class="titulo-principal">💨 GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitulo-principal">Gemelo digital | Simulación hidráulica & económica</p>', unsafe_allow_html=True)
+
+# ------------------ FUNCIONES DE CÁLCULO ------------------
 L_km = 400.0
 L_miles = L_km * 0.621371
 T1_K = 293.15
@@ -246,14 +250,6 @@ def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_ac
 # ------------------ BARRA LATERAL ------------------
 st.sidebar.markdown('<p style="font-size:24px; font-weight:700; color:#7FFFD4; margin-bottom:15px;">⚙️ CONFIGURACIÓN</p>', unsafe_allow_html=True)
 
-# Agregar control de tamaño del título
-st.sidebar.markdown("### 🖌️ Apariencia del título")
-title_size = st.sidebar.slider("Tamaño del título principal (rem)", min_value=3.0, max_value=8.0, value=5.5, step=0.5, help="Ajusta el tamaño del título en la página principal")
-subtitle_size = st.sidebar.slider("Tamaño del subtítulo (px)", min_value=16, max_value=36, value=24, step=2)
-
-# Aplicar CSS dinámico
-apply_css(title_size, subtitle_size)
-
 pipe_data = pipe_data_base.copy()
 
 with st.sidebar.expander("💰 PARÁMETROS ECONÓMICOS", expanded=True):
@@ -288,10 +284,6 @@ params_economicos = {
     "costo_energia": costo_energia,
     "tasa_interes": tasa_interes,
 }
-
-# ------------------ TÍTULOS (con la clase CSS actualizada) ------------------
-st.markdown(f'<p class="titulo-principal">💨 GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
-st.markdown(f'<p class="subtitulo-principal">Gemelo digital | Simulación hidráulica & económica</p>', unsafe_allow_html=True)
 
 # ------------------ PANEL PRINCIPAL ------------------
 st.markdown('<div class="seccion-titulo">📊 RESULTADOS</div>', unsafe_allow_html=True)
@@ -396,3 +388,4 @@ if resultados:
         st.write(f"**Factor CRF (i={tasa_interes}%, 20 años):** {CRF:.4f}")
 else:
     st.error("No se pudo calcular con los parámetros actuales. Revise los valores ingresados.")
+
