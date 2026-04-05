@@ -7,84 +7,67 @@ from math import sqrt, pow
 # ------------------ CONFIGURACIÓN DE LA PÁGINA ------------------
 st.set_page_config(page_title="Gasoducto Trans-Andino", layout="wide")
 
-# ESTILOS CSS AVANZADOS: FONDO NEGRO TOTAL Y SOBREESCRITURA DE SIDEBAR
+# ESTILOS CSS PARA MANTENER TODO NEGRO Y VISIBLE
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
 
-    /* 1. FONDO NEGRO TOTAL (App y Sidebar) */
+    /* Fondo negro total */
     .stApp, [data-testid="stSidebar"], section[data-testid="stSidebar"] > div {
         background-color: #000000 !important;
     }
 
-    /* 2. TEXTOS GLOBALES EN BLANCO */
+    /* Texto global en blanco */
     html, body, [class*="st-"], div, label, p {
         color: #FFFFFF !important;
         font-family: 'Poppins', sans-serif !important;
     }
 
-    /* 3. TÍTULO MONUMENTAL (vw para escala dinámica) */
+    /* Título Monumental */
     .titulo-principal {
-        font-size: 8vw; 
+        font-family: 'Arial Black', sans-serif;
+        font-size: 8vw;
         font-weight: 800;
-        text-align: center;
         color: #7FFFD4 !important;
+        text-align: center;
         margin-top: -50px;
         margin-bottom: 0px;
         text-transform: uppercase;
-        letter-spacing: -2px;
-        line-height: 1;
+        letter-spacing: 2px;
     }
     
     .subtitulo-principal {
-        font-size: 1.2rem;
+        font-size: 20px;
         font-weight: 300;
-        color: #888888 !important;
+        color: #FFFFFF !important;
         text-align: center;
+        margin-top: -10px;
         margin-bottom: 40px;
-        letter-spacing: 5px;
-        text-transform: uppercase;
     }
 
-    /* 4. SIDEBAR: INPUTS NEGROS CON LETRA BLANCA */
-    /* Cuadros de número y selección */
+    /* Sidebar: Inputs negros con texto blanco */
     [data-testid="stSidebar"] input, [data-testid="stSidebar"] select, [data-testid="stSidebar"] div[role="listbox"] {
         background-color: #000000 !important;
         color: #FFFFFF !important;
         border: 1px solid #333333 !important;
     }
-    
-    /* Etiquetas de los inputs en la sidebar */
-    [data-testid="stSidebar"] label p {
-        color: #7FFFD4 !important; /* Color aguamarina para los nombres de parámetros */
-        font-weight: 600 !important;
-    }
 
-    /* 5. TARJETAS DE MÉTRICAS */
+    /* Estilo de tarjetas de métricas */
     .metric-card {
-        background-color: #0A0A0A;
-        border: 1px solid #1A1A1A;
-        border-radius: 15px;
-        padding: 25px;
+        background-color: #111111;
+        border-radius: 20px;
+        padding: 25px 15px;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(127, 255, 212, 0.05);
+        border: 1px solid #2c5a9e;
     }
-    .metric-label {
-        font-size: 14px;
-        color: #888888 !important;
-        text-transform: uppercase;
-        margin-bottom: 10px;
-    }
-    .metric-value {
-        font-size: 38px;
-        font-weight: 700;
-        color: #7FFFD4 !important;
-    }
+    .metric-label { font-size: 18px; color: #DDDDDD !important; }
+    .metric-value { font-size: 36px; font-weight: 700; color: #7FFFD4 !important; }
 
-    /* Títulos de sección con borde */
+    /* Encabezados de sección */
     .seccion-titulo {
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 600;
+        color: #FFFFFF;
         margin-top: 30px;
         border-left: 5px solid #7FFFD4;
         padding-left: 15px;
@@ -92,11 +75,21 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Títulos de la Interfaz
-st.markdown('<h1 class="titulo-principal">GASODUCTO <br> TRANS-ANDINO</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitulo-principal">Gemelo Digital | Optimización & Simulación</p>', unsafe_allow_html=True)
+# Títulos
+st.markdown('<p class="titulo-principal">GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitulo-principal">Gemelo digital | Simulación hidráulica & económica</p>', unsafe_allow_html=True)
 
-# ------------------ DATOS Y CONSTANTES ------------------
+# ------------------ FUNCIONES Y DATOS (TU LÓGICA ORIGINAL) ------------------
+L_km = 400.0
+L_miles = L_km * 0.621371
+T1_K = 293.15
+T1_R = T1_K * 9/5
+gamma = 0.65
+Z = 0.90
+k = 1.28
+eta = 0.85
+horas_anio = 8760
+
 pipe_data_base = {
     "12\"": {"D_ext_mm": 323.8, "t_mm": 10.31, "costo_m": 185},
     "16\"": {"D_ext_mm": 406.4, "t_mm": 12.70, "costo_m": 260},
@@ -109,118 +102,98 @@ steel_data = {
     "X60": {"SMYS_psi": 60000, "F": 0.72},
 }
 
-# ------------------ SIDEBAR (CONFIGURACIÓN) ------------------
-st.sidebar.markdown('<p style="font-size:22px; font-weight:800; color:#7FFFD4; text-align:center;">CONFIGURACIÓN</p>', unsafe_allow_html=True)
+def calcular_MAOP(D_ext_in, t_in, SMYS_psi, F):
+    return 2 * SMYS_psi * F * t_in / D_ext_in
 
-with st.sidebar.expander("💰 PARÁMETROS ECONÓMICOS", expanded=True):
-    costo_energia = st.number_input("Costo energético (USD/kWh)", min_value=0.001, value=0.080, step=0.005, format="%.3f")
-    tasa_interes = st.number_input("Tasa de interés (% anual)", min_value=0.0, max_value=50.0, value=10.0, step=0.5)
-    factor_acero = st.number_input("Factor de acero (Adimensional)", min_value=0.1, value=0.70, step=0.05)
+def weymouth_k_loss(Q_MMscfd, L_seg_millas, D_in_pulg, gamma, T_R, Z):
+    return 433.5 * (Q_MMscfd**2) * L_seg_millas * gamma * T_R * Z / (D_in_pulg**5.33)
 
-with st.sidebar.expander("📏 TUBERÍA Y MATERIAL", expanded=True):
-    diametro_sel = st.selectbox("Diámetro nominal (pulg)", list(pipe_data_base.keys()), index=3)
-    grado_sel = st.selectbox("Grado de acero", list(steel_data.keys()), index=1)
-
-with st.sidebar.expander("🔧 OPERACIONES", expanded=True):
-    Q_mmscfd = st.number_input("Flujo de gas (MMscfd)", min_value=10, value=500, step=10)
-    # Rango coherente para 400km: 1 a 5 estaciones
-    N_estaciones = st.slider("Número de estaciones (N)", min_value=1, max_value=5, value=1)
-
-# ------------------ LÓGICA DE CÁLCULO ------------------
-def calcular_simulacion():
-    # Propiedades
-    L_total_km = 400.0
-    T1_K = 293.15 
-    gamma = 0.65
-    Z = 0.90
-    k_gas = 1.28
-    eficiencia = 0.85
-    
-    # Dimensiones
-    D_ext_p = pipe_data_base[diametro_sel]["D_ext_mm"] / 25.4
-    t_p = pipe_data_base[diametro_sel]["t_mm"] / 25.4
-    D_int_p = D_ext_p - 2 * t_p
-    
-    # MAOP
-    MAOP = (2 * steel_data[grado_sel]["SMYS_psi"] * t_p * steel_data[grado_sel]["F"]) / D_ext_p
-    
-    # Hidráulica (Weymouth por tramo)
-    L_tramo_millas = (L_total_km * 0.621371) / N_estaciones
-    T_R = T1_K * 1.8
-    K_W = 433.5 * pow(Q_mmscfd, 2) * L_tramo_millas * gamma * T_R * Z / pow(D_int_p, 5.33)
-    
-    P_entrega_req = 500.0
-    P_descarga = sqrt(pow(P_entrega_req, 2) + K_W)
-    
-    # Potencia y Temperatura
-    P_suc_base = 800.0 if N_estaciones == 1 else 500.0 # Aproximación operativa
-    r = P_descarga / P_suc_base
-    potencia_est = (Q_mmscfd * 1e6 / (24*3600*eficiencia)) * (Z * 10.73 * T1_K / (k_gas - 1)) * (pow(r, (k_gas-1)/k_gas) - 1)
-    HP_total = potencia_est * N_estaciones
-    T2_C = (T1_K * pow(r, (k_gas-1)/k_gas)) - 273.15
-    
-    # Costos
-    costo_base_m = pipe_data_base[diametro_sel]["costo_m"] * factor_acero
-    capex_ducto = L_total_km * 1000 * costo_base_m
-    capex_comp = HP_total * 1500.0 
-    CAPEX_total = capex_ducto + capex_comp
-    
-    i = tasa_interes / 100
-    CRF = (i * pow(1+i, 20)) / (pow(1+i, 20) - 1) if i > 0 else 1/20
-    opex_e = HP_total * 0.7457 * 8760 * costo_energia
-    opex_m = CAPEX_total * 0.02
-    TAC = (CAPEX_total * CRF) + opex_e + opex_m
-    
+def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_actual):
+    # (Se mantiene exactamente tu función de cálculo original)
+    diam_nom = diametro
+    D_ext_mm = pipe_data_actual[diam_nom]["D_ext_mm"]
+    t_mm = pipe_data_actual[diam_nom]["t_mm"]
+    D_int_mm = D_ext_mm - 2*t_mm
+    D_int_pulg = D_int_mm / 25.4
+    costo_pipe_m = pipe_data_actual[diam_nom]["costo_m"]
+    SMYS_psi = steel_data[grado_acero]["SMYS_psi"]
+    F = steel_data[grado_acero]["F"]
+    D_ext_pulg = D_ext_mm / 25.4
+    t_pulg = t_mm / 25.4
+    MAOP_psi = calcular_MAOP(D_ext_pulg, t_pulg, SMYS_psi, F)
+    L_seg_millas = L_miles / N
+    K_seg = weymouth_k_loss(Q, L_seg_millas, D_int_pulg, gamma, T1_R, Z)
+    if K_seg < 0: return None
+    P_desc_psi = sqrt(500**2 + K_seg)
+    supera_maop = P_desc_psi > MAOP_psi
+    distancias_km, presiones_psi = [], []
+    dist_actual = 0.0
+    for i in range(N):
+        distancias_km.extend([dist_actual, dist_actual + (L_km / N)])
+        presiones_psi.extend([P_desc_psi, 500.0])
+        dist_actual += (L_km / N)
+    HP_total, T2_max_C, factor, P_suc = 0.0, 0.0, 0.0857, 800.0
+    for i in range(N):
+        if i > 0: P_suc = 500.0
+        r = P_desc_psi / P_suc
+        HP_est = factor * Q * P_suc * (pow(r, (k-1)/k) - 1) / eta
+        HP_total += HP_est
+        T2_C = (T1_K * pow(r, (k-1)/k)) - 273.15
+        if T2_C > T2_max_C: T2_max_C = T2_C
+    i_tasa = params_economicos["tasa_interes"] / 100.0
+    CRF = i_tasa * (1+i_tasa)**20 / ((1+i_tasa)**20 - 1) if i_tasa > 0 else 1/20
+    capex_pipe = (L_km * 1000) * costo_pipe_m
+    capex_comp = HP_total * 1500.0
+    opex_energia = (HP_total * 0.7457 * horas_anio) * params_economicos["costo_energia"]
+    opex_mant = 0.05 * capex_comp
+    TAC = (capex_pipe + capex_comp) * CRF + opex_energia + opex_mant
     return {
-        "TAC": TAC, "HP": HP_total, "P_desc": P_descarga, "MAOP": MAOP, 
-        "T2": T2_C, "D_int": D_int_p, "CAPEX": CAPEX_total, "OPEX": opex_e + opex_m
+        "TAC": TAC, "HP_total": HP_total, "presion_final": presiones_psi[-1],
+        "P_descarga": P_desc_psi, "MAOP": MAOP_psi, "supera_MAOP": supera_maop,
+        "alerta_termica": T2_max_C > 65.0, "T2_max_C": T2_max_C,
+        "distancias_km": distancias_km, "presiones_psi": presiones_psi,
+        "cost_breakdown": {"CAPEX Ducto": capex_pipe, "CAPEX Compresores": capex_comp, "OPEX Energía": opex_energia, "OPEX Mant.": opex_mant},
+        "capex_total": capex_pipe + capex_comp, "opex_total": opex_energia + opex_mant
     }
 
-res = calcular_simulacion()
+# ------------------ BARRA LATERAL (SIDEBAR) ------------------
+st.sidebar.markdown('<p style="font-size:24px; font-weight:700; color:#7FFFD4;">⚙️ CONFIGURACIÓN</p>', unsafe_allow_html=True)
+
+with st.sidebar.expander("💰 PARÁMETROS ECONÓMICOS", expanded=True):
+    costo_energia = st.number_input("Costo energía (USD/kWh)", min_value=0.01, value=0.05, step=0.01)
+    tasa_interes = st.number_input("Tasa interés (% anual)", min_value=0.0, value=8.0, step=0.5)
+    factor_steel = st.number_input("Factor de acero", min_value=0.5, value=1.0, step=0.05)
+
+with st.sidebar.expander("📏 TUBERÍA Y MATERIAL", expanded=True):
+    diametro = st.selectbox("Diámetro nominal", list(pipe_data_base.keys()))
+    grado_acero = st.selectbox("Grado del acero", list(steel_data.keys()))
+
+with st.sidebar.expander("🔧 OPERACIÓN", expanded=True):
+    Q_diseno = st.number_input("Flujo (MMscfd)", min_value=100, value=500, step=10)
+    N_estaciones = st.slider("N° estaciones", min_value=1, max_value=6, value=2)
+
+# Aplicar factor
+pipe_data = pipe_data_base.copy()
+for d in pipe_data: pipe_data[d]["costo_m"] *= factor_steel
 
 # ------------------ PANEL PRINCIPAL ------------------
-st.markdown('<div class="seccion-titulo">📊 RESULTADOS CLAVE</div>', unsafe_allow_html=True)
-col1, col2, col3 = st.columns(3)
+st.markdown('<div class="seccion-titulo">📊 RESULTADOS</div>', unsafe_allow_html=True)
+res = calcular_perfil(N_estaciones, Q_diseno, diametro, grado_acero, {"costo_energia": costo_energia, "tasa_interes": tasa_interes}, pipe_data)
 
-with col1:
-    st.markdown(f'<div class="metric-card"><div class="metric-label">💰 TAC (USD/AÑO)</div><div class="metric-value">${res["TAC"]:,.0f}</div></div>', unsafe_allow_html=True)
-with col2:
-    st.markdown(f'<div class="metric-card"><div class="metric-label">⚙️ POTENCIA TOTAL</div><div class="metric-value">{res["HP"]:,.0f} HP</div></div>', unsafe_allow_html=True)
-with col3:
-    st.markdown(f'<div class="metric-card"><div class="metric-label">📉 PRESIÓN FINAL</div><div class="metric-value">500.0 psia</div></div>', unsafe_allow_html=True)
+if res:
+    c1, c2, c3 = st.columns(3)
+    c1.markdown(f'<div class="metric-card"><div class="metric-label">💰 TAC (USD/año)</div><div class="metric-value">${res["TAC"]:,.0f}</div></div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="metric-card"><div class="metric-label">⚙️ Potencia total</div><div class="metric-value">{res["HP_total"]:,.0f} HP</div></div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="metric-card"><div class="metric-label">📉 Presión final</div><div class="metric-value">{res["presion_final"]:.1f} psia</div></div>', unsafe_allow_html=True)
 
-# Gráfico
-st.markdown('<div class="seccion-titulo">📈 PERFIL DE PRESIÓN</div>', unsafe_allow_html=True)
-d_step = 400.0 / N_estaciones
-x_vals, y_vals = [], []
-for n in range(N_estaciones):
-    x_vals.extend([n*d_step, (n+1)*d_step])
-    y_vals.extend([res["P_desc"], 500.0])
+    st.markdown('<div class="seccion-titulo">📈 PERFIL HIDRÁULICO</div>', unsafe_allow_html=True)
+    fig1 = go.Figure(go.Scatter(x=res['distancias_km'], y=res['presiones_psi'], mode='lines+markers', line=dict(color='#7FFFD4', width=4)))
+    fig1.update_layout(plot_bgcolor='#1E1E1E', paper_bgcolor='#000000', font=dict(color='white'))
+    st.plotly_chart(fig1, use_container_width=True)
 
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=x_vals, y=y_vals, mode='lines+markers', line=dict(color='#7FFFD4', width=4)))
-fig.update_layout(
-    plot_bgcolor='black', paper_bgcolor='black', 
-    xaxis=dict(title="Distancia (km)", gridcolor='#222'),
-    yaxis=dict(title="Presión (psia)", gridcolor='#222'),
-    margin=dict(l=10, r=10, t=10, b=10),
-    height=400
-)
-st.plotly_chart(fig, use_container_width=True)
-
-# Alertas
-st.markdown('<div class="seccion-titulo">⚠️ VALIDACIÓN DE SEGURIDAD</div>', unsafe_allow_html=True)
-if res["P_desc"] > res["MAOP"]:
-    st.error(f"🚨 ALERTA MAOP: Presión descarga ({res['P_desc']:.1f} psi) supera límite ({res['MAOP']:.1f} psi)")
-else:
-    st.success(f"✅ MAOP Seguro: {res['P_desc']:.1f} < {res['MAOP']:.1f} psi")
-
-if res["T2"] > 65.0:
-    st.error(f"🔥 ALERTA TÉRMICA: {res['T2']:.1f}°C supera el límite de 65°C")
-else:
-    st.success(f"✅ Temperatura controlada: {res['T2']:.1f}°C")
-
-with st.expander("🔍 VER DETALLES TÉCNICOS"):
-    st.write(f"Diámetro Interno: {res['D_int']:.2f} pulg")
-    st.write(f"CAPEX Estimado: ${res['CAPEX']:,.0f}")
-    st.write(f"OPEX Estimado: ${res['OPEX']:,.0f}")
+    st.markdown('<div class="seccion-titulo">⚠️ VALIDACIÓN DE SEGURIDAD</div>', unsafe_allow_html=True)
+    if res['supera_MAOP']: st.error(f"🚨 MAOP Excedido: {res['P_descarga']:.1f} > {res['MAOP']:.1f} psia")
+    else: st.success(f"✅ MAOP Seguro: {res['P_descarga']:.1f} psia")
+    
+    if res['alerta_termica']: st.error(f"🔥 Temperatura Alta: {res['T2_max_C']:.1f} °C")
+    else: st.success(f"✅ Temperatura Segura: {res['T2_max_C']:.1f} °C")
