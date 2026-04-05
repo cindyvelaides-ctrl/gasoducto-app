@@ -96,7 +96,8 @@ smys = steel_data[selected_steel]["smys"]
 f_design = steel_data[selected_steel]["f"]
 
 # parámetros de ruta
-l_km = 400.0l_mi = l_km * 0.621371              # longitud en millas
+l_km = 400.0
+l_mi = l_km * 0.621371              # longitud en millas
 p_in = 800.0                        # presión de recepción [psia]
 p_delivery_min = 500.0              # presión mínima de entrega [psia]
 
