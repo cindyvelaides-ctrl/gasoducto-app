@@ -112,8 +112,6 @@ st.markdown("""
     .st-emotion-cache-16txtl3, .st-emotion-cache-1v0mbdj {
         background-color: #000000 !important;
     }
-
-    }
     
     /* Encabezados de expander (color del texto) */
     .streamlit-expanderHeader {
@@ -129,14 +127,14 @@ st.markdown("""
     section[data-testid="stSidebar"] .stSelectbox,
     section[data-testid="stSidebar"] .stSlider {
         background-color: #000000 !important;
-}
+    }
     
-        /* Etiquetas de los inputs en la barra lateral: blanco */
-section[data-testid="stSidebar"] .stNumberInput label,
-section[data-testid="stSidebar"] .stSelectbox label,
-section[data-testid="stSidebar"] .stSlider label {
-    color: #FFFFFF !important;
-}
+    /* Etiquetas de los inputs en la barra lateral: blanco */
+    section[data-testid="stSidebar"] .stNumberInput label,
+    section[data-testid="stSidebar"] .stSelectbox label,
+    section[data-testid="stSidebar"] .stSlider label {
+        color: #FFFFFF !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -188,58 +186,78 @@ def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_ac
     t_pulg = t_mm / 25.4
     MAOP_psi = calcular_MAOP(D_ext_pulg, t_pulg, SMYS_psi, F)
     
-    L_seg_millas = L_miles / N
-    K_seg = weymouth_k_loss(Q, L_seg_millas, D_int_pulg, gamma, T1_R, Z)
+    L_seg_millas = L_miles / N          # millas por segmento (entre compresores)
     
-    if K_seg < 0:
-        return None
-    P_desc_psi = sqrt(500**2 + K_seg)
-    supera_maop = P_desc_psi > MAOP_psi
-    
-    distancias_km = []
-    presiones_psi = []
-    dist_actual = 0.0
-    for i in range(N):
-        distancias_km.append(dist_actual)
-        presiones_psi.append(P_desc_psi)
-        dist_seg_km = L_km / N
-        distancias_km.append(dist_actual + dist_seg_km)
-        presiones_psi.append(500.0)
-        dist_actual += dist_seg_km
-    
+    # Simulación de presión a lo largo del gasoducto
+    distancias_km = [0.0]
+    presiones_psi = [800.0]              # presión inicial
+    P_actual = 800.0
     HP_total = 0.0
     T2_max_C = 0.0
-    factor = 0.0857
-    P_suc = 800.0
-    r = P_desc_psi / P_suc
-    HP_est = factor * Q * P_suc * (pow(r, (k-1)/k) - 1) / eta
-    HP_total += HP_est
-    T2_K = T1_K * pow(r, (k-1)/k)
-    T2_C = T2_K - 273.15
-    T2_max_C = T2_C
     
-    for _ in range(1, N):
-        P_suc = 500.0
-        r = P_desc_psi / P_suc
+    # Para cada estación (cada compresor)
+    for i in range(N):
+        # 1. Caída de presión en el segmento i (desde P_actual)
+        K_seg = weymouth_k_loss(Q, L_seg_millas, D_int_pulg, gamma, T1_R, Z)
+        if K_seg < 0:
+            return None
+        # Presión al final del segmento (antes de comprimir)
+        P_fin_seg = sqrt(P_actual**2 - K_seg)
+        if P_fin_seg < 0.1:
+            return None
+        dist_km = (i+1) * (L_km / N)
+        distancias_km.append(dist_km)
+        presiones_psi.append(P_fin_seg)
+        
+        # 2. Compresor: eleva la presión a 800 psia
+        P_suc = P_fin_seg
+        P_desc = 800.0
+        r = P_desc / P_suc
+        # Calcular potencia de este compresor
+        factor = 0.0857
         HP_est = factor * Q * P_suc * (pow(r, (k-1)/k) - 1) / eta
         HP_total += HP_est
+        
+        # Temperatura de descarga
         T2_K = T1_K * pow(r, (k-1)/k)
         T2_C = T2_K - 273.15
         if T2_C > T2_max_C:
             T2_max_C = T2_C
+        
+        # Actualizar presión para el siguiente segmento
+        P_actual = P_desc
+        
+        # Si no es el último compresor, añadir punto de presión de descarga (opcional para el gráfico)
+        if i < N-1:
+            distancias_km.append(dist_km)
+            presiones_psi.append(P_desc)
     
+    # Después del último compresor, el gas viaja un segmento más hasta la entrega.
+    # Última caída desde P_actual (800) hasta la presión final
+    K_ultimo = weymouth_k_loss(Q, L_seg_millas, D_int_pulg, gamma, T1_R, Z)
+    if K_ultimo < 0:
+        return None
+    P_final = sqrt(P_actual**2 - K_ultimo)
+    if P_final < 0.1:
+        return None
+    dist_final_km = L_km
+    distancias_km.append(dist_final_km)
+    presiones_psi.append(P_final)
+    
+    # Alertas
+    supera_maop = P_desc > MAOP_psi   # P_desc = 800
     alerta_termica = T2_max_C > 65.0
-    presion_final_psi = presiones_psi[-1]
-    alerta_entrega = presion_final_psi < 500.0
+    alerta_entrega = P_final < 500.0
     
+    # Costos
     longitud_m = L_km * 1000
     capex_pipe = longitud_m * costo_pipe_m
     capex_comp = HP_total * 1500.0
     
-    i = params_economicos["tasa_interes"] / 100.0
+    i_tasa = params_economicos["tasa_interes"] / 100.0
     n = 20
-    if i > 0:
-        CRF = i * (1+i)**n / ((1+i)**n - 1)
+    if i_tasa > 0:
+        CRF = i_tasa * (1+i_tasa)**n / ((1+i_tasa)**n - 1)
     else:
         CRF = 1/n
     
@@ -260,8 +278,8 @@ def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_ac
     return {
         "TAC": TAC,
         "HP_total": HP_total,
-        "presion_final": presion_final_psi,
-        "P_descarga": P_desc_psi,
+        "presion_final": P_final,
+        "P_descarga": P_desc,
         "MAOP": MAOP_psi,
         "supera_MAOP": supera_maop,
         "alerta_termica": alerta_termica,
@@ -415,4 +433,3 @@ if resultados:
         st.write(f"**Factor CRF (i={tasa_interes}%, 20 años):** {CRF:.4f}")
 else:
     st.error("No se pudo calcular con los parámetros actuales. Revise los valores ingresados.")
-
