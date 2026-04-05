@@ -129,6 +129,8 @@ st.markdown("""
     section[data-testid="stSidebar"] .stSelectbox,
     section[data-testid="stSidebar"] .stSlider {
         background-color: #000000 !important;
+}
+    
         /* Etiquetas de los inputs en la barra lateral: blanco */
 section[data-testid="stSidebar"] .stNumberInput label,
 section[data-testid="stSidebar"] .stSelectbox label,
@@ -146,7 +148,6 @@ section[data-testid="stSidebar"] .stSlider .stSliderValue {
 /* Números del slider (el valor que se muestra) */
 section[data-testid="stSidebar"] .stSlider .stMarkdown {
     color: #FFFFFF !important;
-}
     }
     </style>
 """, unsafe_allow_html=True)
