@@ -146,7 +146,7 @@ st.markdown("""
 st.markdown('<p class="titulo-principal"> GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitulo-principal">Gemelo digital | Simulación hidráulica & económica</p>', unsafe_allow_html=True)
 
-# ------------------ FUNCIONES DE CÁLCULO (CORREGIDAS) ------------------
+# FUNCIONES DE CÁLCULO
 L_km = 400.0
 L_miles = L_km * 0.621371
 T1_K = 293.15
@@ -162,18 +162,6 @@ R_univ = 10.7316         # psi·ft³/(lbmol·R)
 MW_aire = 28.97
 MW = gamma * MW_aire     # lb/lbmol
 R_esp = R_univ / MW      # psi·ft³/(lbm·R)   (constante específica)
-
-# Factor de conversión para potencia (de la ecuación del enunciado)
-# La fórmula: HP = (Q*1e6)/(24*3600*η) * (Z*R_esp*T1_R)/(k-1) * [(Pout/Pin)^((k-1)/k) - 1]
-# El primer factor da scf/s. Multiplicado por (Z*R_esp*T1_R)/(k-1) da (lbf·ft/lbm)·(scf/s)
-# Para obtener HP (550 lbf·ft/s = 1 HP), necesitamos convertir scf a lb usando la densidad en condiciones estándar.
-# Pero como la fórmula del enunciado ya está "adimensionalizada", asumimos que R_esp está en (lbf·ft)/(lbm·R)
-# y que Q está en MMscfd. Para evitar confusiones, usaremos una versión común en ingeniería:
-# HP = 0.0857 * Q * (Z * T1_R / MW) * (k/(k-1)) * (r^((k-1)/k) - 1) / eta  (con Q en MMscfd, T1_R en R, MW en lb/lbmol)
-# Este factor 0.0857 proviene de (1e6)/(24*3600)* (R_univ/550) etc. Es ampliamente usado.
-# Lo dejamos así para mantener coherencia con cálculos previos que sí daban resultados razonables.
-# Pero para mayor precisión, usaremos la fórmula directa con la densidad estándar.
-# Vamos a implementar la fórmula correcta paso a paso.
 
 def potencia_compresor(Q_MMscfd, P_suc_psia, P_desc_psia, T_suc_R, Z, k, MW, eta):
     """
@@ -210,7 +198,7 @@ def weymouth_drop(P1, Q, L_mi, D_in, gamma, T_R, Z):
 def calcular_MAOP(D_ext_in, t_in, SMYS_psi, F):
     return 2 * SMYS_psi * F * t_in / D_ext_in
 
-# Datos de tuberías y aceros (igual que antes)
+# Datos de tuberías y aceros
 pipe_data_base = {
     "12\"": {"D_ext_mm": 323.8, "t_mm": 10.31, "costo_m": 185},
     "16\"": {"D_ext_mm": 406.4, "t_mm": 12.70, "costo_m": 260},
@@ -247,7 +235,7 @@ def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_ac
     HP_total = 0.0
     T2_max_C = 0.0
     
-    # Simular los primeros N segmentos (cada uno seguido de un compresor)
+    # Simular los primeros N segmentos
     for i in range(N):
         # Caída en el segmento i+1
         P_fin_seg = weymouth_drop(P_actual, Q, L_seg_mi, D_int_pulg, gamma, T1_R, Z)
@@ -329,7 +317,7 @@ def calcular_perfil(N, Q, diametro, grado_acero, params_economicos, pipe_data_ac
         "opex_total": OPEX_total,
     }
 
-# ------------------ BARRA LATERAL ------------------
+# BARRA LATERAL
 st.sidebar.markdown('<p style="font-size:24px; font-weight:700; color:#7FFFD4; margin-bottom:15px;">⚙️ CONFIGURACIÓN</p>', unsafe_allow_html=True)
 
 pipe_data = pipe_data_base.copy()
@@ -370,7 +358,7 @@ params_economicos = {
     "tasa_interes": tasa_interes,
 }
 
-# ------------------ PANEL PRINCIPAL ------------------
+#  PANEL PRINCIPAL
 st.markdown('<div class="seccion-titulo">📊 RESULTADOS</div>', unsafe_allow_html=True)
 
 resultados = calcular_perfil(N_estaciones, Q_diseno, diametro, grado_acero, params_economicos, pipe_data)
