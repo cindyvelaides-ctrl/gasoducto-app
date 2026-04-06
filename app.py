@@ -332,10 +332,10 @@ pipe_data = pipe_data_base.copy()
 
 with st.sidebar.expander("💰 PARÁMETROS ECONÓMICOS", expanded=True):
     st.markdown('<div class="descripcion">💡 Mayor costo energía → mayor OPEX (gasto anual).</div>', unsafe_allow_html=True)
-    costo_energia = st.number_input("USD/kWh", min_value=0.01, max_value=1.0, value=0.05, step=0.01, format="%.3f", key="energia")
+    costo_energia = st.number_input("Costo de energía USD/kWh", min_value=0.01, max_value=1.0, value=0.05, step=0.01, format="%.3f", key="energia")
     
     st.markdown('<div class="descripcion">💡 Tasa interés alta → encarece el costo anual del capital (CRF).</div>', unsafe_allow_html=True)
-    tasa_interes = st.number_input("% anual", min_value=0.0, max_value=30.0, value=8.0, step=0.5, key="interes")
+    tasa_interes = st.number_input("Tasa de interés % anual", min_value=0.0, max_value=30.0, value=8.0, step=0.5, key="interes")
     
     st.markdown('<div class="descripcion">💡 Multiplica costo del acero (simula variaciones de mercado).</div>', unsafe_allow_html=True)
     factor_steel = st.number_input("Factor acero", min_value=0.5, max_value=2.0, value=1.0, step=0.05, key="acero")
