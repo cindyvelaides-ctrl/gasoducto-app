@@ -4,10 +4,9 @@ import numpy as np
 import plotly.graph_objects as go
 from math import sqrt, pow
 
-# ------------------ CONFIGURACIÓN DE LA PÁGINA ------------------
+# CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(page_title="Gasoducto Trans-Andino", layout="wide")
 
-# Estilos CSS personalizados para homogeneidad
 st.markdown("""
     <style>
     /* Fuente global profesional */
@@ -103,7 +102,6 @@ st.markdown("""
         font-family: 'Poppins', 'Segoe UI', sans-serif;
     }
     
-    /* ========== BARRA LATERAL Y EXPANDERS NEGROS ========== */
     /* Fondo de la barra lateral */
     section[data-testid="stSidebar"],
     section[data-testid="stSidebar"] > div,
@@ -135,11 +133,17 @@ st.markdown("""
     section[data-testid="stSidebar"] .stSlider label {
         color: #FFFFFF !important;
     }
+    
+    .streamlit-expanderContent div,
+.streamlit-expanderContent p,
+.streamlit-expanderContent .stMarkdown,
+.streamlit-expanderContent .stText {
+    color: #FFFFFF !important;
+}
     </style>
 """, unsafe_allow_html=True)
 
-# Títulos (con emoji de gas 💨)
-st.markdown('<p class="titulo-principal">💨 GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
+st.markdown('<p class="titulo-principal"> GASODUCTO TRANS-ANDINO</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitulo-principal">Gemelo digital | Simulación hidráulica & económica</p>', unsafe_allow_html=True)
 
 # ------------------ FUNCIONES DE CÁLCULO (CORREGIDAS) ------------------
